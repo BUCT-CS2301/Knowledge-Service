@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mapper.CommentMapper">
+    <resultMap id="CommentEntityMap" type="com.entity.Comment">
+        <id column="user_comment_id" property="cid"/><result column="user_id" property="uid"/><result column="relic_id" property="rid"/> <result column="content" property="content"/><result column="user_comment" property="user_comment"/>  <result column="created_time" property="createdTime"/>
+    </resultMap>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="cid">
+        INSERT INTO
+            comment(user_id,relic_id,content,user_comment,created_time,modified_time) VALUES (#{uid}, #{rid}, #{content}, #{user_comment}, #{createdTime},  #{modifiedTime})
+    </insert>
+    <delete id="delete">
+        DELETE FROM comment_check WHERE user_comment_id=#{cid}
+    </delete>
+    <select id="findByUidandRid" resultType="com.entity.CommentView">
+        SELECT
+        comment_check.user_comment_id as cid,
+        comment_check.user_id as uid,
+        comment_check.relic_id as rid,
+        user.user_name as username,
+        cultural_relics_data.object_name as relicname,
+        comment_check.content as content,
+        comment_check.created_time as created_time
+        FROM comment_check,user,cultural_relics_data WHERE comment_check.user_id=#{uid} and comment_check.relic_id=#{rid} and comment_check.user_id=user.user_id and comment_check.relic_id=cultural_relics_data.id
+    </select>
+    <select id="findByUid" resultType="com.entity.CommentView">
+        SELECT
+            comment_check.user_comment_id as cid,
+            comment_check.user_id as uid,
+            comment_check.relic_id as rid,
+            user.user_name as username,
+            cultural_relics_data.object_name as relicname,
+            comment_check.content as content,
+            comment_check.created_time as created_time
+        FROM comment_check,user,cultural_relics_data WHERE comment_check.user_id=#{uid}  and comment_check.user_id=user.user_id and comment_check.relic_id=cultural_relics_data.id
+
+    </select>
+    <select id="findByRid" resultType="com.entity.CommentView">
+        SELECT
+            comment_check.user_comment_id as cid,
+            comment_check.user_id as uid,
+            comment_check.relic_id as rid,
+            user.user_name as username,
+            cultural_relics_data.object_name as relicname,
+            comment_check.content as content,
+            comment_check.created_time as created_time
+        FROM comment_check,user,cultural_relics_data WHERE comment_check.relic_id= #{rid}  and comment_check.user_id=user.user_id and comment_check.relic_id=cultural_relics_data.id
+    </select>
+    <select id="findBycid" resultMap="CommentEntityMap">
+        SELECT * FROM comment_check WHERE user_comment_id=#{cid}
+    </select>
+
+</mapper>
