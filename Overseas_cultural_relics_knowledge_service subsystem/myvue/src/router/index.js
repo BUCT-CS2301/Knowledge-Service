@@ -15,6 +15,16 @@ const routes = [
     component: () => import('../views/antiqueDetail/antiqueDetail.vue')
   },
   {
+    path: '/relicDetail',
+    name: 'relicDetail',
+    component: () => import('../views/relicDetail/relicDetail.vue')
+  },
+  {
+    path: '/museumDetail',
+    name: 'museumDetail',
+    component: () => import('../views/museumDetail/museumDetail.vue')
+  },
+  {
     path: '/index',
     name: 'IndexView',
     component: () => import('../views/common/IndexView.vue')

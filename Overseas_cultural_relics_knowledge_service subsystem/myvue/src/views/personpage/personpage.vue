@@ -15,52 +15,51 @@
 
         <nav class="nav-menu">
           <el-menu
-            :default-openeds="['1']"
             mode="vertical"
             background-color="transparent"
             text-color="#666"
-            active-text-color="#8B4513">
-
-            <el-submenu index="1">
-              <template slot="title">
+            active-text-color="#8B4513"
+            :default-active="activeMenu">
+            <div class="menu-section">
+              <div class="section-title">
                 <i class="el-icon-user"></i>
                 <span>个人中心</span>
-              </template>
-              <el-menu-item-group>
-                <router-link class="menu-link" to="/personpage/info">
-                  <el-menu-item index="1-1">
-                    <i class="el-icon-user-solid"></i>
-                    个人信息
-                  </el-menu-item>
-                </router-link>
-                <router-link class="menu-link" to="/personpage/changeimg">
-                  <el-menu-item index="1-2">
-                    <i class="el-icon-camera"></i>
-                    修改头像
-                  </el-menu-item>
-                </router-link>
-                <router-link class="menu-link" to="/personpage/changeinfo">
-                  <el-menu-item index="1-3">
-                    <i class="el-icon-edit"></i>
-                    修改信息
-                  </el-menu-item>
-                </router-link>
-              </el-menu-item-group>
-            </el-submenu>
+              </div>
+              <router-link class="menu-link" to="/personpage/info">
+                <el-menu-item index="/personpage/info">
+                  <i class="el-icon-user-solid"></i>
+                  个人信息
+                </el-menu-item>
+              </router-link>
+              <router-link class="menu-link" to="/personpage/changeimg">
+                <el-menu-item index="/personpage/changeimg">
+                  <i class="el-icon-camera"></i>
+                  修改头像
+                </el-menu-item>
+              </router-link>
+              <router-link class="menu-link" to="/personpage/changeinfo">
+                <el-menu-item index="/personpage/changeinfo">
+                  <i class="el-icon-edit"></i>
+                  修改信息
+                </el-menu-item>
+              </router-link>
+            </div>
 
-            <router-link class="menu-link" to="/personpage/favourite">
-              <el-menu-item index="2">
-                <i class="el-icon-star-on"></i>
-                <span>我的收藏</span>
-              </el-menu-item>
-            </router-link>
+            <div class="menu-section">
+              <router-link class="menu-link" to="/personpage/favourite">
+                <el-menu-item index="/personpage/favourite">
+                  <i class="el-icon-star-on"></i>
+                  <span>我的收藏</span>
+                </el-menu-item>
+              </router-link>
 
-            <router-link class="menu-link" to="/personpage/myComment">
-              <el-menu-item index="3">
-                <i class="el-icon-message"></i>
-                <span>我的评论</span>
-              </el-menu-item>
-            </router-link>
+              <router-link class="menu-link" to="/personpage/myComment">
+                <el-menu-item index="/personpage/myComment">
+                  <i class="el-icon-message"></i>
+                  <span>我的评论</span>
+                </el-menu-item>
+              </router-link>
+            </div>
           </el-menu>
         </nav>
       </aside>
@@ -97,6 +96,11 @@ export default {
   components: {
     MainFooter,
     MainHeader
+  },
+  computed: {
+    activeMenu () {
+      return this.$route.path
+    }
   },
   methods: {
     handleImgError () {
@@ -237,13 +241,22 @@ export default {
   background: linear-gradient(135deg, rgba(139, 69, 19, 0.15) 0%, rgba(205, 133, 63, 0.1) 100%);
 }
 
-:deep(.el-submenu__title) {
-  margin: 4px 0;
-  border-radius: 8px;
-  transition: all 0.3s ease;
+.menu-section {
+  margin-bottom: 16px;
+}
 
-  &:hover {
-    background: rgba(139, 69, 19, 0.08);
-  }
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.section-title i {
+  font-size: 16px;
 }
 </style>

@@ -56,13 +56,13 @@ export default {
       },
       selectedDynasty: '',
       dynasties: [
-        { label: '唐', value: 'tang' },
-        { label: '宋', value: 'song' },
-        { label: '元', value: 'yuan' },
-        { label: '明', value: 'ming' },
-        { label: '清', value: 'qing' },
+        { label: '唐代', value: 'tang' },
+        { label: '宋代', value: 'song' },
+        { label: '元代', value: 'yuan' },
+        { label: '明代', value: 'ming' },
+        { label: '清代', value: 'qing' },
         { label: '北魏', value: 'beiwei' },
-        { label: '周', value: 'zhou' }
+        { label: '周代', value: 'zhou' }
       ],
       dynasties2: [
         { label: '东周', value: 'dongzhou' },
@@ -75,14 +75,19 @@ export default {
   },
   methods: {
     res_res () {
-      axios.post('http://localhost:8085/search/obscure', this.in_form).then((response) => {
+      if (!this.in_form.keyword.trim()) {
+        this.$message.warning('请输入搜索关键词')
+        return
+      }
+      
+      axios.post('http://localhost:8080/search/obscure', this.in_form).then((response) => {
         console.log(response.data)
         if (response.data.state === 200) {
           this.$router.push({ path: '/result', query: { keyword: this.in_form.keyword } })
         } else {
           alert(response.data)
         }
-      }).catch(function (error) {
+      }).catch((error) => {
         console.log(error)
         this.$router.push({ path: '/result', query: { keyword: this.in_form.keyword } })
       })
@@ -118,75 +123,58 @@ export default {
   }
 
   :deep(.el-button--primary) {
-    background-color: #8B4513 !important;
-    border-color: #8B4513 !important;
     height: 45px;
-    color: #fff !important;
-
-    &:hover {
-      background-color: #6B3510 !important;
-      border-color: #6B3510 !important;
-      color: #fff !important;
-    }
   }
 }
 
 .filter-section {
   max-width: 600px;
   margin: 0 auto;
-  text-align: center;
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
 
-  .filter-title {
-    font-size: 16px;
-    color: #333;
-    margin-bottom: 20px;
-    font-weight: 500;
+.filter-title {
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.dynasty-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.dynasty-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px 15px;
+  background: #f5f5f5;
+  border-radius: 20px;
+  transition: all 0.3s;
+
+  &:hover {
+    background: #e8e8e8;
   }
 
-  .dynasty-options {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    flex-wrap: wrap;
-    margin-bottom: 20px;
-  }
-
-  .dynasty-label {
-    display: flex;
-    align-items: center;
-    gap: 5px;
+  input[type="radio"] {
+    margin-right: 8px;
     cursor: pointer;
-    padding: 8px 16px;
-    background: white;
-    border-radius: 20px;
-    transition: all 0.3s;
-
-    &:hover {
-      background: #fff8f0;
-    }
-
-    input[type="radio"] {
-      accent-color: #8B4513;
-    }
-
-    span {
-      font-size: 14px;
-      color: #666;
-    }
   }
 
-  .confirm-button-wrapper {
-    margin-top: 30px;
-
-    :deep(.el-button--primary) {
-      background-color: #8B4513 !important;
-      border-color: #8B4513 !important;
-
-      &:hover {
-        background-color: #6B3510 !important;
-        border-color: #6B3510 !important;
-      }
-    }
+  span {
+    font-size: 14px;
+    color: #666;
   }
+}
+
+.confirm-button-wrapper {
+  text-align: center;
+  margin-top: 20px;
 }
 </style>

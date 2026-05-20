@@ -11,7 +11,7 @@
               {{ username }}
             </h1>
           </div>
-          <p class="welcome-desc">欢迎来到您的个人中心，管理您的收藏、评论和个人信息</p>
+          <p class="welcome-desc">欢迎来到您的个人中心，探索海外文物世界</p>
           <div class="welcome-stats">
             <div class="mini-stat">
               <span class="mini-value">{{ collectionsCount }}</span>
@@ -22,7 +22,6 @@
               <span class="mini-value">{{ commentsCount }}</span>
               <span class="mini-label">评论</span>
             </div>
-
           </div>
         </div>
         <div class="welcome-right">
@@ -56,7 +55,7 @@
       <div class="quick-stats">
         <h3 class="section-title">
           <i class="el-icon-info"></i>
-          系统信息
+          账户信息
         </h3>
         <div class="info-list">
           <div class="info-item">
@@ -68,7 +67,7 @@
             <span class="info-value">{{ onlineDuration }}</span>
           </div>
           <div class="info-item">
-            <span class="info-label">当前版本</span>
+            <span class="info-label">版本号</span>
             <span class="info-value">v1.0.0</span>
           </div>
         </div>
@@ -80,17 +79,19 @@
 <script>
 var storage = window.localStorage
 import defaultAvatar from '../../assets/timg.jpeg'
+import axios from 'axios'
 
 export default {
   name: 'personpage_hello',
   data () {
     return {
-      username: '游客',
+      username: '用户',
       userAvatar: defaultAvatar,
       collectionsCount: 0,
       commentsCount: 0,
       loginTime: '',
-      onlineDuration: '0分钟'
+      onlineDuration: '0分钟',
+      recentActivities: []
     }
   },
   computed: {
@@ -101,15 +102,6 @@ export default {
       if (hour < 14) return '中午好'
       if (hour < 18) return '下午好'
       return '晚上好'
-    },
-
-    recentActivities () {
-      return [
-        { type: 'collect', icon: 'el-icon-star-on', text: '收藏了文物 "青铜镜"', time: '5分钟前' },
-        { type: 'comment', icon: 'el-icon-message', text: '评论了文物 "玉器"', time: '30分钟前' },
-        { type: 'visit', icon: 'el-icon-eye', text: '浏览了文物详情页', time: '1小时前' },
-        { type: 'update', icon: 'el-icon-edit', text: '更新了个人资料', time: '2小时前' }
-      ]
     }
   },
   mounted () {
@@ -117,7 +109,7 @@ export default {
     this.startOnlineTimer()
   },
   methods: {
-    initData () {
+    async initData () {
       const username = storage.getItem('username')
       const users = JSON.parse(storage.getItem('users') || '[]')
       const user = users.find(u => u.username === username)
@@ -126,7 +118,7 @@ export default {
         this.username = user.user_name || username
         this.userAvatar = user.avatar && user.avatar !== '' ? user.avatar : defaultAvatar
       } else {
-        this.username = username || '游客'
+        this.username = username || '用户'
       }
 
       const userId = storage.getItem('user_id')
@@ -137,6 +129,55 @@ export default {
       this.commentsCount = comments.filter(c => c.userId === userId).length
 
       this.loginTime = new Date().toLocaleString('zh-CN')
+
+      await this.fetchUserLogs(userId)
+    },
+    async fetchUserLogs (userId) {
+      const accessToken = storage.getItem('accessToken')
+      if (!userId) {
+        this.setDefaultActivities()
+        return
+      }
+
+      try {
+        const response = await axios.get(`/api/v1/users/${userId}/logs?page=1&pageSize=4`, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        })
+
+        if (response.data.code === 200 && response.data.data && response.data.data.length > 0) {
+          this.recentActivities = response.data.data.map(log => {
+            const typeMap = {
+              'collect': { icon: 'el-icon-star-on', type: 'collect' },
+              'comment': { icon: 'el-icon-message', type: 'comment' },
+              'visit': { icon: 'el-icon-eye', type: 'visit' },
+              'update': { icon: 'el-icon-edit', type: 'update' },
+              'login': { icon: 'el-icon-user', type: 'update' }
+            }
+            const info = typeMap[log.type] || { icon: 'el-icon-info', type: 'update' }
+            return {
+              type: info.type,
+              icon: info.icon,
+              text: log.description || log.action,
+              time: log.time || '刚刚'
+            }
+          })
+        } else {
+          this.setDefaultActivities()
+        }
+      } catch (error) {
+        console.log('获取用户日志失败:', error)
+        this.setDefaultActivities()
+      }
+    },
+    setDefaultActivities () {
+      this.recentActivities = [
+        { type: 'collect', icon: 'el-icon-star-on', text: '收藏了青铜鼎', time: '5分钟前' },
+        { type: 'comment', icon: 'el-icon-message', text: '评论了青花瓷', time: '30分钟前' },
+        { type: 'visit', icon: 'el-icon-eye', text: '浏览了文物详情', time: '1小时前' },
+        { type: 'update', icon: 'el-icon-edit', text: '更新了个人资料', time: '2小时前' }
+      ]
     },
     handleAvatarError () {
       this.userAvatar = defaultAvatar
@@ -160,28 +201,23 @@ export default {
 
 <style scoped>
 .hello-page {
-  padding: 0;
-  min-height: 100%;
+  padding: 20px;
 }
 
 .welcome-section {
   position: relative;
-  background: linear-gradient(135deg, #8B4513 0%, #A0522D 50%, #CD853F 100%);
-  border-radius: 0 0 32px 32px;
-  padding: 48px 32px;
+  border-radius: 12px;
   overflow: hidden;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .welcome-bg {
   position: absolute;
-  top: -50%;
-  right: -20%;
-  width: 400px;
-  height: 400px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 50%;
-  filter: blur(40px);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%);
 }
 
 .welcome-content {
@@ -189,71 +225,49 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  z-index: 1;
+  padding: 30px;
+  color: white;
 }
 
 .welcome-left {
   flex: 1;
 }
 
-.greeting {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
 .greeting-text {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.85);
-  background: rgba(255, 255, 255, 0.15);
-  padding: 6px 16px;
-  border-radius: 20px;
-  backdrop-filter: blur(10px);
+  opacity: 0.9;
 }
 
 .welcome-title {
-  font-size: 42px;
-  font-weight: 700;
-  color: white;
-  margin: 0 0 16px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.welcome-title i {
-  font-size: 36px;
+  font-size: 28px;
+  margin: 10px 0;
 }
 
 .welcome-desc {
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.85);
-  margin: 0 0 24px;
-  max-width: 400px;
+  font-size: 14px;
+  opacity: 0.8;
+  margin-bottom: 20px;
 }
 
 .welcome-stats {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 30px;
 }
 
 .mini-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  text-align: center;
 }
 
 .mini-value {
+  display: block;
   font-size: 28px;
-  font-weight: 700;
-  color: white;
+  font-weight: bold;
 }
 
 .mini-label {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  opacity: 0.8;
 }
 
 .divider {
@@ -268,156 +282,114 @@ export default {
 
 .avatar-circle {
   position: relative;
-  width: 140px;
-  height: 140px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .user-avatar {
-  width: 140px;
-  height: 140px;
-  border-radius: 50%;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border: 4px solid rgba(255, 255, 255, 0.4);
-  position: relative;
-  z-index: 2;
 }
 
 .avatar-glow {
   position: absolute;
-  top: -8px;
-  left: -8px;
-  right: -8px;
-  bottom: -8px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.4) 0%, rgba(255, 165, 0, 0.2) 100%);
-  z-index: 1;
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.6;
-  }
-  50% {
-    transform: scale(1.05);
-    opacity: 1;
-  }
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
 }
 
 .main-content {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .section-title {
   font-size: 18px;
-  font-weight: 600;
+  font-weight: bold;
+  margin-bottom: 15px;
   color: #333;
-  margin: 0 0 20px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-left: 8px;
-  border-left: 4px solid #8B4513;
 }
 
-.recent-activity {
+.recent-activity,
+.quick-stats {
   background: white;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
 .activity-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 15px;
 }
 
 .activity-item {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 12px;
-  border-radius: 10px;
-  transition: background 0.3s ease;
-}
-
-.activity-item:hover {
-  background: #f8f9fa;
+  gap: 12px;
 }
 
 .activity-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: white;
   font-size: 18px;
-  flex-shrink: 0;
 }
 
 .activity-icon.collect {
-  background: rgba(255, 215, 0, 0.15);
-  color: #CD8500;
+  background: linear-gradient(135deg, #FF6B6B, #FF8E53);
 }
 
 .activity-icon.comment {
-  background: rgba(78, 205, 196, 0.15);
-  color: #44A08D;
+  background: linear-gradient(135deg, #4ECDC4, #44A08D);
 }
 
 .activity-icon.visit {
-  background: rgba(99, 102, 241, 0.15);
-  color: #6366F1;
+  background: linear-gradient(135deg, #45B7D1, #2980B9);
 }
 
 .activity-icon.update {
-  background: rgba(52, 152, 219, 0.15);
-  color: #3498DB;
+  background: linear-gradient(135deg, #9B59B6, #8E44AD);
 }
 
 .activity-content {
   flex: 1;
-  min-width: 0;
 }
 
 .activity-text {
   font-size: 14px;
   color: #333;
-  margin: 0 0 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  margin: 0;
 }
 
 .activity-time {
   font-size: 12px;
   color: #999;
-  margin: 0;
-}
-
-.quick-stats {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
 
 .info-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .info-item {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
+  padding: 10px 0;
   border-bottom: 1px solid #f0f0f0;
 }
 
@@ -426,35 +398,12 @@ export default {
 }
 
 .info-label {
-  font-size: 14px;
   color: #999;
+  font-size: 14px;
 }
 
 .info-value {
-  font-size: 14px;
   color: #333;
   font-weight: 500;
-}
-
-@media (max-width: 992px) {
-  .welcome-content {
-    flex-direction: column;
-    text-align: center;
-    gap: 32px;
-  }
-
-  .welcome-title {
-    justify-content: center;
-  }
-
-  .welcome-stats {
-    justify-content: center;
-  }
-}
-
-@media (max-width: 576px) {
-  .welcome-title {
-    font-size: 28px;
-  }
 }
 </style>

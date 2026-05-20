@@ -10,16 +10,16 @@
         <span class="title">选择材质</span>
         <el-radio v-model="searchForm.v_2" label="Stoneware">石器</el-radio>
         <el-radio v-model="searchForm.v_2" label="Glazed">釉面</el-radio>
-        <el-radio v-model="searchForm.v_2" label="Porcelain">瓷</el-radio>
-        <el-radio v-model="searchForm.v_2" label="Jade">玉</el-radio>
+        <el-radio v-model="searchForm.v_2" label="Porcelain">�?/el-radio>
+        <el-radio v-model="searchForm.v_2" label="Jade">�?/el-radio>
         <el-radio v-model="searchForm.v_2" label="Earthenware">陶器</el-radio>
-        <el-radio v-model="searchForm.v_2" label="Unglazed">未上釉</el-radio>
+        <el-radio v-model="searchForm.v_2" label="Unglazed">未上�?/el-radio>
       </div>
-      <el-button type="primary" @click="onSubmit_to_search">确 定</el-button>
+      <el-button type="primary" @click="onSubmit_to_search">�?�?/el-button>
         </div>
         <div v-else >
-          <el-button type="primary" @click="ars">按字母降序</el-button>
-          <el-button type="primary" @click="up">按字母升序</el-button>
+          <el-button type="primary" @click="ars">按字母降�?/el-button>
+          <el-button type="primary" @click="up">按字母升�?/el-button>
           <div style="font-size: 14px;">
             <div style="background-color:#d3dce6;color: gray;">
               <div style="margin: 0 200px;">
@@ -67,7 +67,7 @@ export default {
   },
   data () {
     return {
-      // 避免多个select选值混乱
+      // 避免多个select选值混�?
       searchForm: {
         c: 'mart',
         v_2: ''
@@ -87,7 +87,7 @@ export default {
   methods: {
     onSubmit_to_search () {
       if (this.searchForm.v_2 === '') { alert('请选择材质') } else {
-        axios.post('http://localhost:8085/search/classification', this.searchForm).then((response) => {
+        axios.post('http://localhost:8080/search/classification', this.searchForm).then((response) => {
           console.log(response.data)
           if (response.data.state === 200) {
             // eslint-disable-next-line no-sequences,no-unused-expressions

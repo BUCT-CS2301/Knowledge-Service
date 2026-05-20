@@ -45,6 +45,7 @@
 </template>
 
 <script>
+import axios from 'axios'
 var storage = window.localStorage
 export default {
   data () {
@@ -58,8 +59,40 @@ export default {
     }
   },
   methods: {
-    pageInit () {
+    async pageInit () {
+      const accessToken = storage.getItem('accessToken')
       const username = storage.getItem('username')
+
+      if (!username) {
+        this.userInfo.user_name = '游客'
+        return
+      }
+
+      // 优先尝试从后端获取用户信息
+      if (accessToken) {
+        try {
+          const response = await axios.get('/api/v1/auth/current-user', {
+            headers: {
+              Authorization: `Bearer ${accessToken}`
+            }
+          })
+
+          if (response.data.code === 200) {
+            const data = response.data.data
+            this.userInfo = {
+              user_name: data.userName || data.username || '未设置',
+              sex: data.sex || '',
+              tele: data.tele || '',
+              bio: data.bio || ''
+            }
+            return
+          }
+        } catch (error) {
+          console.error('获取用户信息失败:', error)
+        }
+      }
+
+      // 后端不可用时，使用本地存储作为备用
       const users = JSON.parse(storage.getItem('users') || '[]')
       const user = users.find(u => u.username === username)
 

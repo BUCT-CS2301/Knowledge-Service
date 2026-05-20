@@ -110,25 +110,25 @@ export default {
         { label: '雕塑', value: 'Sculpture' },
         { label: '绘画', value: 'Painting' },
         { label: '工具', value: 'Tool and Equipment' },
-        { label: '玉', value: 'Jade' },
+        { label: '玉器', value: 'Jade' },
         { label: '兵器', value: 'Weapon and Armament' }
       ],
       materialOptions: [
         { label: '石器', value: 'Stoneware' },
         { label: '釉面', value: 'Glazed' },
-        { label: '瓷', value: 'Porcelain' },
-        { label: '玉', value: 'Jade' },
+        { label: '瓷器', value: 'Porcelain' },
+        { label: '玉器', value: 'Jade' },
         { label: '陶器', value: 'Earthenware' },
         { label: '未上釉', value: 'Unglazed' }
       ],
       dynastyOptions: [
-        { label: '唐', value: 'Tang Dynasty' },
-        { label: '宋', value: 'Song Dynasty' },
-        { label: '元', value: 'Yuan Dynasty' },
-        { label: '明', value: 'Ming Dynasty' },
-        { label: '清', value: 'Qing Dynasty' },
+        { label: '唐代', value: 'Tang Dynasty' },
+        { label: '宋代', value: 'Song Dynasty' },
+        { label: '元代', value: 'Yuan Dynasty' },
+        { label: '明代', value: 'Ming Dynasty' },
+        { label: '清代', value: 'Qing Dynasty' },
         { label: '北魏', value: 'Northern Wei Dynasty' },
-        { label: '周', value: 'Zhou Dynasty' },
+        { label: '周代', value: 'Zhou Dynasty' },
         { label: '东周', value: 'Eastern Zhou Dynasty' },
         { label: '南宋', value: 'Northern Song' },
         { label: '东汉', value: 'Eastern Han Dynasty' },
@@ -138,7 +138,7 @@ export default {
       museumOptions: [
         { label: '弗利尔美术馆', value: 'Freersackler' },
         { label: '丹佛美术馆', value: 'Denver Art Museum' },
-        { label: '鲁宾艺术馆', value: 'Rubin Museum' },
+        { label: '鲁宾艺术博物馆', value: 'Rubin Museum' },
         { label: '亚洲协会及其博物馆', value: 'Asia Society Museum' },
         { label: '大卫奥斯利艺术博物馆', value: 'David Owsley Museum of Art' }
       ]
@@ -146,7 +146,7 @@ export default {
   },
   methods: {
     onSubmit_to_search () {
-      axios.post('http://localhost:8085/search/pro', this.searchForm).then((response) => {
+      axios.post('http://localhost:8080/search/pro', this.searchForm).then((response) => {
         console.log(response.data)
         if (response.data.state === 200) {
           this.res_form = response.data.data
@@ -154,7 +154,7 @@ export default {
         } else {
           alert(response.data)
         }
-      }).catch(function (error) {
+      }).catch((error) => {
         console.log(error)
         this.res_form = [
           { object_name: '青铜器', cat2: '商周', img_url: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=ancient%20chinese%20bronze%20vessel&image_size=square_hd', id: 1 },
@@ -189,130 +189,83 @@ export default {
 .search-form {
   max-width: 800px;
   margin: 0 auto;
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 }
 
 .form-section {
   margin-bottom: 30px;
+}
 
-  .section-title {
-    font-size: 16px;
-    color: #333;
-    margin-bottom: 15px;
-    font-weight: 500;
+.section-title {
+  font-weight: bold;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.options-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.option-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px 15px;
+  background: #f5f5f5;
+  border-radius: 20px;
+  transition: all 0.3s;
+
+  &:hover {
+    background: #e8e8e8;
   }
 
-  .options-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-  }
-
-  .option-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  input[type="radio"] {
+    margin-right: 8px;
     cursor: pointer;
-    padding: 10px 20px;
-    background: white;
-    border-radius: 25px;
-    transition: all 0.3s;
+  }
 
-    &:hover {
-      background: #fff8f0;
-    }
-
-    input[type="radio"] {
-      accent-color: #8B4513;
-    }
-
-    span {
-      font-size: 14px;
-      color: #666;
-    }
+  span {
+    font-size: 14px;
+    color: #666;
   }
 }
 
 .submit-button-wrapper {
   text-align: center;
-  margin-top: 40px;
-
-  :deep(.el-button--primary) {
-    background-color: #8B4513 !important;
-    border-color: #8B4513 !important;
-    padding: 12px 40px;
-    font-size: 16px;
-
-    &:hover {
-      background-color: #6B3510 !important;
-      border-color: #6B3510 !important;
-    }
-  }
+  margin-top: 30px;
 }
 
 .result-section {
   max-width: 1200px;
   margin: 0 auto;
-
-  .sort-buttons {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 20px;
-
-    :deep(.el-button--primary) {
-      background-color: #8B4513 !important;
-      border-color: #8B4513 !important;
-
-      &:hover {
-        background-color: #6B3510 !important;
-        border-color: #6B3510 !important;
-      }
-    }
-  }
-
-  .result-grid {
-    padding: 20px;
-    background: white;
-    border-radius: 12px;
-
-    .result-card {
-      margin-bottom: 20px;
-    }
-
-    .result-el-card {
-      width: 100%;
-      height: 400px;
-    }
-
-    .result-image {
-      width: 100%;
-      height: 250px;
-      object-fit: cover;
-    }
-  }
 }
 
-.time {
-  font-size: 13px;
-  color: #999;
+.sort-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
-.bottom {
-  margin-top: 10px;
-  line-height: 12px;
+.result-grid {
+  margin-top: 20px;
 }
 
-.button {
-  padding: 0;
-  float: right;
+.result-card {
+  margin-bottom: 20px;
 }
 
-.clearfix:before,
-.clearfix:after {
-  display: table;
-  content: "";
+.result-el-card {
+  height: 100%;
 }
 
-.clearfix:after {
-  clear: both
+.result-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
 }
 </style>

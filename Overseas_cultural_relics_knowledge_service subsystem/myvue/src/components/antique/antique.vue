@@ -22,7 +22,7 @@
         </div>
         <div class="bottom clearfix">
           <el-button type="primary" @click="changeButton" v-if="isStared">
-            已收藏
+            已收�?
             <i class="el-icon-star-on"></i>
           </el-button>
         </div>
@@ -53,7 +53,7 @@ export default {
   },
   methods: {
     pageInit () {
-      axios.post('http://localhost:8085/search/searchById', this.form
+      axios.post('http://localhost:8080/search/searchById', this.form
       ).then((response) => {
         this.name = response.data.data.object_name
         this.pic = response.data.data.img_url
@@ -76,7 +76,7 @@ export default {
             this.$message({
               showClose: true,
               type: 'warning',
-              message: '已取消收藏'
+              message: '已取消收�?
             })
           }
         }
@@ -92,7 +92,7 @@ export default {
             this.$message({
               showClose: true,
               type: 'success',
-              message: '已收藏'
+              message: '已收�?
             })
           }
         }

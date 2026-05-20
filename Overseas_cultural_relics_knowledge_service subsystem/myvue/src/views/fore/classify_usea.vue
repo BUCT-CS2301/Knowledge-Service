@@ -7,7 +7,7 @@
       <div>
         <div v-if="flag">
       <div label="种类">
-        <span class="title">选择用途</span>
+        <span class="title">选择用�?/span>
         <el-radio v-model="searchForm.v_3" label="Metalwork">金属</el-radio>
         <el-radio v-model="searchForm.v_3" label="Ceramic">陶瓷</el-radio>
         <el-radio v-model="searchForm.v_3" label="Jewelry and Ornament">珠宝</el-radio>
@@ -16,14 +16,14 @@
         <el-radio v-model="searchForm.v_3" label="Sculpture">雕塑</el-radio>
         <el-radio v-model="searchForm.v_3" label="Painting">绘画</el-radio>
         <el-radio v-model="searchForm.v_3" label="Tool and Equipment">工具</el-radio>
-        <el-radio v-model="searchForm.v_3" label="Jade">玉</el-radio>
+        <el-radio v-model="searchForm.v_3" label="Jade">�?/el-radio>
         <el-radio v-model="searchForm.v_3" label="Weapon and Armament">兵器</el-radio>
       </div>
-          <el-button type="primary" @click="onSubmit_to_search">确 定</el-button>
+          <el-button type="primary" @click="onSubmit_to_search">�?�?/el-button>
         </div>
         <div v-else >
-          <el-button type="primary" @click="ars">按字母降序</el-button>
-          <el-button type="primary" @click="up">按字母升序</el-button>
+          <el-button type="primary" @click="ars">按字母降�?/el-button>
+          <el-button type="primary" @click="up">按字母升�?/el-button>
           <div style="font-size: 14px;">
             <div style="background-color: #d3dce6;color: gray;">
               <div style="margin: 0 200px;">
@@ -71,7 +71,7 @@ export default {
   },
   data () {
     return {
-      // 避免多个select选值混乱
+      // 避免多个select选值混�?
       searchForm: {
         c: 'use',
         v_3: ''
@@ -90,8 +90,8 @@ export default {
   },
   methods: {
     onSubmit_to_search () {
-      if (this.searchForm.v_3 === '') { alert('请选择用途') } else {
-        axios.post('http://localhost:8085/search/classification', this.searchForm).then((response) => {
+      if (this.searchForm.v_3 === '') { alert('请选择用�?) } else {
+        axios.post('http://localhost:8080/search/classification', this.searchForm).then((response) => {
           console.log(response.data)
           if (response.data.state === 200) {
             // eslint-disable-next-line no-sequences,no-unused-expressions

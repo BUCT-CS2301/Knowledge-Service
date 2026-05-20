@@ -32,6 +32,7 @@
 </template>
 
 <script>
+import axios from 'axios'
 import MainFooter from '../../components/MainFooter/MainFooter'
 import MainHeader from '../../components/MainHeader/MainHeader'
 
@@ -59,26 +60,52 @@ export default {
     }
   },
   methods: {
-    onSubmit () {
+    async onSubmit () {
       if (!this.form.username || !this.form.password) {
         this.$message.error('请输入账号和密码')
         return
       }
 
-      const users = JSON.parse(localStorage.getItem('users') || '[]')
-      const user = users.find(u => u.username === this.form.username && u.password === this.form.password)
+      try {
+        const response = await axios.post('/api/v1/auth/login', {
+          username: this.form.username,
+          password: this.form.password
+        }, {
+          timeout: 3000  // 添加3秒超时，避免长时间等待
+        })
 
-      if (user) {
-        localStorage.setItem('username', user.username)
-        localStorage.setItem('user_id', user.id.toString())
-        localStorage.setItem('user_name', user.user_name)
-        localStorage.setItem('islogin', '1')
-        this.$message.success('登录成功！')
-        setTimeout(() => {
-          this.$router.push('/index')
-        }, 1000)
-      } else {
-        this.$message.error('账号或密码错误')
+        if (response.data.code === 200) {
+          const data = response.data.data
+          localStorage.setItem('accessToken', data.accessToken)
+          localStorage.setItem('username', data.username)
+          localStorage.setItem('user_id', data.id.toString())
+          localStorage.setItem('user_name', data.userName || data.username)
+          localStorage.setItem('islogin', '1')
+          this.$message.success('登录成功！')
+          setTimeout(() => {
+            this.$router.push('/index')
+          }, 1000)
+        } else {
+          this.$message.error(response.data.message || '登录失败')
+        }
+      } catch (error) {
+        console.error('登录失败:', error)
+        // 如果后端不可用，尝试使用本地存储作为备用
+        const users = JSON.parse(localStorage.getItem('users') || '[]')
+        const user = users.find(u => u.username === this.form.username && u.password === this.form.password)
+
+        if (user) {
+          localStorage.setItem('username', user.username)
+          localStorage.setItem('user_id', user.id.toString())
+          localStorage.setItem('user_name', user.user_name)
+          localStorage.setItem('islogin', '1')
+          this.$message.warning('使用本地数据登录成功！')
+          setTimeout(() => {
+            this.$router.push('/index')
+          }, 1000)
+        } else {
+          this.$message.error('账号或密码错误')
+        }
       }
     },
     turn_to_register () {

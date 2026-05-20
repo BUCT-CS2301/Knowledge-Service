@@ -8,13 +8,13 @@
           <div v-if="flag">
             <div label="朝代" class="opt">
               <span class="title">选择朝代</span>
-              <el-radio v-model="searchForm.v_1" label="Tang Dynasty">唐</el-radio>
-              <el-radio v-model="searchForm.v_1" label="Song Dynasty">宋</el-radio>
-              <el-radio v-model="searchForm.v_1" label="Yuan Dynasty">元</el-radio>
-              <el-radio v-model="searchForm.v_1" label="Ming Dynasty">明</el-radio>
-              <el-radio v-model="searchForm.v_1" label="Qing Dynasty">清</el-radio>
+              <el-radio v-model="searchForm.v_1" label="Tang Dynasty">�?/el-radio>
+              <el-radio v-model="searchForm.v_1" label="Song Dynasty">�?/el-radio>
+              <el-radio v-model="searchForm.v_1" label="Yuan Dynasty">�?/el-radio>
+              <el-radio v-model="searchForm.v_1" label="Ming Dynasty">�?/el-radio>
+              <el-radio v-model="searchForm.v_1" label="Qing Dynasty">�?/el-radio>
               <el-radio v-model="searchForm.v_1" label="Northern Wei Dynasty">北魏</el-radio>
-              <el-radio v-model="searchForm.v_1" label="Zhou Dynasty">周</el-radio>
+              <el-radio v-model="searchForm.v_1" label="Zhou Dynasty">�?/el-radio>
             </div>
             <div label="朝代">
               <el-radio v-model="searchForm.v_1" label="Eastern Zhou Dynasty">东周</el-radio>
@@ -23,11 +23,11 @@
               <el-radio v-model="searchForm.v_1" label="Western Han Dynasty">西汉</el-radio>
               <el-radio v-model="searchForm.v_1" label="Shang Dynasty">中商</el-radio>
             </div>
-            <el-button type="primary" @click="onSubmit_to_search">确 定</el-button>
+            <el-button type="primary" @click="onSubmit_to_search">�?�?/el-button>
           </div>
           <div v-else >
-            <el-button type="primary" @click="ars">按字母降序</el-button>
-            <el-button type="primary" @click="up">按字母升序</el-button>
+            <el-button type="primary" @click="ars">按字母降�?/el-button>
+            <el-button type="primary" @click="up">按字母升�?/el-button>
             <div style="font-size: 14px;">
               <div style="background-color:#d3dce6;color: gray;">
                 <div style="margin: 0 200px;">
@@ -74,7 +74,7 @@ export default {
   },
   data () {
     return {
-      // 避免多个select选值混乱
+      // 避免多个select选值混�?
       searchForm: {
         c: 'dynasty',
         v_1: ''
@@ -95,7 +95,7 @@ export default {
   methods: {
     onSubmit_to_search () {
       if (this.searchForm.v_1 === '') { alert('请选择朝代') } else {
-        axios.post('http://localhost:8085/search/classification', this.searchForm).then((response) => {
+        axios.post('http://localhost:8080/search/classification', this.searchForm).then((response) => {
           console.log(response.data)
           if (response.data.state === 200) {
             // eslint-disable-next-line no-sequences,no-unused-expressions

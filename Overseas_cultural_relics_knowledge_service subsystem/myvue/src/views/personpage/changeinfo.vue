@@ -90,6 +90,7 @@
 </template>
 
 <script>
+import axios from 'axios'
 export default {
   data () {
     return {
@@ -102,7 +103,8 @@ export default {
         newPassword: ''
       },
       userInfo: {
-        password: ''
+        password: '',
+        id: ''
       },
       rules: {
         oldPassword: [
@@ -118,8 +120,35 @@ export default {
     this.pageInit()
   },
   methods: {
-    pageInit () {
+    async pageInit () {
+      const accessToken = localStorage.getItem('accessToken')
       const username = localStorage.getItem('username')
+      const userId = localStorage.getItem('user_id')
+
+      // 优先尝试从后端获取用户信息
+      if (accessToken) {
+        try {
+          const response = await axios.get('/api/v1/auth/current-user', {
+            headers: {
+              Authorization: `Bearer ${accessToken}`
+            }
+          })
+
+          if (response.data.code === 200) {
+            const data = response.data.data
+            this.form.name = data.userName || data.username || ''
+            this.form.sex = data.sex || '男'
+            this.form.tel = data.tele || ''
+            this.form.bio = data.bio || ''
+            this.userInfo.id = data.id || userId || ''
+            return
+          }
+        } catch (error) {
+          console.error('获取用户信息失败:', error)
+        }
+      }
+
+      // 后端不可用时，使用本地存储作为备用
       const users = JSON.parse(localStorage.getItem('users') || '[]')
       const user = users.find(u => u.username === username)
 
@@ -129,9 +158,62 @@ export default {
         this.form.tel = user.tele || ''
         this.form.bio = user.bio || ''
         this.userInfo.password = user.password || ''
+        this.userInfo.id = user.id || userId || ''
       }
     },
-    onSubmit () {
+    async onSubmit () {
+      const accessToken = localStorage.getItem('accessToken')
+      const userId = localStorage.getItem('user_id') || this.userInfo.id
+
+      if (!userId) {
+        this.$message.error('用户不存在')
+        return
+      }
+
+      // 构建更新数据
+      const updateData = {
+        userName: this.form.name,
+        sex: this.form.sex,
+        tele: this.form.tel,
+        bio: this.form.bio
+      }
+
+      if (this.form.newPassword) {
+        if (this.form.newPassword.length < 6) {
+          this.$message.error('新密码长度至少6位')
+          return
+        }
+        updateData.password = this.form.newPassword
+        if (this.form.oldPassword) {
+          updateData.oldPassword = this.form.oldPassword
+        }
+      }
+
+      // 优先尝试调用后端API
+      if (accessToken) {
+        try {
+          const response = await axios.put(`/api/v1/users/${userId}`, updateData, {
+            headers: {
+              Authorization: `Bearer ${accessToken}`
+            }
+          })
+
+          if (response.data.code === 200) {
+            if (this.form.name) {
+              localStorage.setItem('user_name', this.form.name)
+            }
+            this.$message.success('修改成功!')
+            return
+          } else {
+            this.$message.error(response.data.message || '修改失败')
+            return
+          }
+        } catch (error) {
+          console.error('修改用户信息失败:', error)
+        }
+      }
+
+      // 后端不可用时，使用本地存储作为备用
       const username = localStorage.getItem('username')
       const users = JSON.parse(localStorage.getItem('users') || '[]')
       const index = users.findIndex(u => u.username === username)
@@ -146,12 +228,7 @@ export default {
         return
       }
 
-      if (this.form.newPassword && this.form.newPassword.length < 6) {
-        this.$message.error('新密码长度至少6位')
-        return
-      }
-
-      const updateData = {
+      const localUpdateData = {
         user_name: this.form.name,
         sex: this.form.sex,
         tele: this.form.tel,
@@ -159,17 +236,17 @@ export default {
       }
 
       if (this.form.newPassword) {
-        updateData.password = this.form.newPassword
+        localUpdateData.password = this.form.newPassword
       }
 
-      users[index] = { ...users[index], ...updateData }
+      users[index] = { ...users[index], ...localUpdateData }
       localStorage.setItem('users', JSON.stringify(users))
 
       if (this.form.name) {
         localStorage.setItem('user_name', this.form.name)
       }
 
-      this.$message.success('修改成功!')
+      this.$message.warning('使用本地数据修改成功!')
     },
     resetForm () {
       this.pageInit()
