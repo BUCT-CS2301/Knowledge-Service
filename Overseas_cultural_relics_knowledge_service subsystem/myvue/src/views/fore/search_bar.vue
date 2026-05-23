@@ -1,9 +1,9 @@
 <template>
   <div>
-    <MainHeader></MainHeader>
-    
+    <MainHeader />
+
     <div class="pro-search-container">
-      <div v-if="flag" class="search-form">
+      <div class="search-form">
         <div class="form-section">
           <div class="section-title">选择用途</div>
           <div class="options-container">
@@ -45,46 +45,20 @@
         </div>
 
         <div class="submit-button-wrapper">
-          <el-button type="primary" @click="onSubmit_to_search">确定</el-button>
-        </div>
-      </div>
-
-      <div v-else class="result-section">
-        <div class="sort-buttons">
-          <el-button type="primary" @click="ars">按字母降序</el-button>
-          <el-button type="primary" @click="up">按字母升序</el-button>
-        </div>
-        <div class="result-grid">
-          <el-row>
-            <el-col v-for="(item, index) in res_form" :key="index" :span="6">
-              <div class="result-card">
-                <router-link :to="{path: '/antiqueDetail', query: {id:item.id}}">
-                  <el-card :body-style="{ padding: '0px' }" class="result-el-card">
-                    <img :src="item.img_url" class="result-image" alt="">
-                    <div style="padding: 14px;">
-                      <span>{{ item.object_name }}</span>
-                      <div class="bottom clearfix">
-                        <time class="time">{{ item.cat2 }}</time>
-                        <el-button type="text" class="button">详情</el-button>
-                      </div>
-                    </div>
-                  </el-card>
-                </router-link>
-              </div>
-            </el-col>
-          </el-row>
+          <el-button type="primary" :loading="loading" @click="onSubmit">确定</el-button>
+          <el-button @click="resetForm">重置</el-button>
         </div>
       </div>
     </div>
 
-    <MainFooter></MainFooter>
+    <MainFooter />
   </div>
 </template>
 
 <script>
-import MainHeader from '../../components/MainHeader/MainHeader'
-import MainFooter from '../../components/MainFooter/MainFooter'
-import axios from 'axios'
+import MainHeader from '../../components/MainHeader/MainHeader.vue'
+import MainFooter from '../../components/MainFooter/MainFooter.vue'
+import { ElMessage } from 'element-plus'
 
 export default {
   components: {
@@ -93,14 +67,13 @@ export default {
   },
   data () {
     return {
+      loading: false,
       searchForm: {
         v_1: '',
         v_2: '',
         v_3: '',
         v_4: ''
       },
-      res_form: [],
-      flag: true,
       usageOptions: [
         { label: '金属', value: 'Metalwork' },
         { label: '陶瓷', value: 'Ceramic' },
@@ -145,35 +118,25 @@ export default {
     }
   },
   methods: {
-    onSubmit_to_search () {
-      axios.post('http://localhost:8085/search/pro', this.searchForm).then((response) => {
-        console.log(response.data)
-        if (response.data.state === 200) {
-          this.res_form = response.data.data
-          this.flag = false
-        } else {
-          alert(response.data)
+    onSubmit () {
+      const { v_1, v_2, v_3, v_4 } = this.searchForm
+      if (!v_1 && !v_2 && !v_3 && !v_4) {
+        ElMessage.warning('请至少选择一个查询条件')
+        return
+      }
+      this.$router.push({
+        path: '/result',
+        query: {
+          mode: 'multi',
+          ...(v_1 && { v_1 }),
+          ...(v_2 && { v_2 }),
+          ...(v_3 && { v_3 }),
+          ...(v_4 && { v_4 })
         }
-      }).catch(function (error) {
-        console.log(error)
-        this.res_form = [
-          { object_name: '青铜器', cat2: '商周', img_url: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=ancient%20chinese%20bronze%20vessel&image_size=square_hd', id: 1 },
-          { object_name: '青花瓷', cat2: '明代', img_url: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=blue%20and%20white%20porcelain%20Chinese%20ceramic&image_size=square_hd', id: 2 },
-          { object_name: '敦煌壁画', cat2: '唐代', img_url: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Dunhuang%20mural%20painting%20Buddhist%20art&image_size=square_hd', id: 3 },
-          { object_name: '唐三彩', cat2: '唐代', img_url: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Tang%20dynasty%20tri-colored%20pottery%20figurine&image_size=square_hd', id: 4 }
-        ]
-        this.flag = false
       })
     },
-    up () {
-      this.res_form.sort(function (x, y) {
-        return x.object_name.localeCompare(y.object_name)
-      })
-    },
-    ars () {
-      this.res_form.sort(function (x, y) {
-        return y.object_name.localeCompare(x.object_name)
-      })
+    resetForm () {
+      this.searchForm = { v_1: '', v_2: '', v_3: '', v_4: '' }
     }
   }
 }
@@ -221,8 +184,8 @@ export default {
       background: #fff8f0;
     }
 
-    input[type="radio"] {
-      accent-color: #8B4513;
+    input[type='radio'] {
+      accent-color: #8b4513;
     }
 
     span {
@@ -235,84 +198,20 @@ export default {
 .submit-button-wrapper {
   text-align: center;
   margin-top: 40px;
+  display: flex;
+  justify-content: center;
+  gap: 16px;
 
   :deep(.el-button--primary) {
-    background-color: #8B4513 !important;
-    border-color: #8B4513 !important;
+    background-color: #8b4513 !important;
+    border-color: #8b4513 !important;
     padding: 12px 40px;
     font-size: 16px;
 
     &:hover {
-      background-color: #6B3510 !important;
-      border-color: #6B3510 !important;
+      background-color: #6b3510 !important;
+      border-color: #6b3510 !important;
     }
   }
-}
-
-.result-section {
-  max-width: 1200px;
-  margin: 0 auto;
-
-  .sort-buttons {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 20px;
-
-    :deep(.el-button--primary) {
-      background-color: #8B4513 !important;
-      border-color: #8B4513 !important;
-
-      &:hover {
-        background-color: #6B3510 !important;
-        border-color: #6B3510 !important;
-      }
-    }
-  }
-
-  .result-grid {
-    padding: 20px;
-    background: white;
-    border-radius: 12px;
-
-    .result-card {
-      margin-bottom: 20px;
-    }
-
-    .result-el-card {
-      width: 100%;
-      height: 400px;
-    }
-
-    .result-image {
-      width: 100%;
-      height: 250px;
-      object-fit: cover;
-    }
-  }
-}
-
-.time {
-  font-size: 13px;
-  color: #999;
-}
-
-.bottom {
-  margin-top: 10px;
-  line-height: 12px;
-}
-
-.button {
-  padding: 0;
-  float: right;
-}
-
-.clearfix:before,
-.clearfix:after {
-  display: table;
-  content: "";
-}
-
-.clearfix:after {
-  clear: both
 }
 </style>

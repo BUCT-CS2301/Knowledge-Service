@@ -1,48 +1,66 @@
 <template>
   <div>
-    <MainHeader></MainHeader>
-    
+    <MainHeader />
+
     <div class="keyword-search-container">
       <div class="search-section">
         <div class="search-box-wrapper">
-          <el-input v-model="in_form.keyword" placeholder="请输入内容">
+          <el-input
+            v-model="in_form.keyword"
+            placeholder="输入文物名称、作者、博物馆等关键字"
+            clearable
+            @keyup.enter="doSearch"
+          >
             <template #append>
-              <el-button type="primary" @click="res_res">搜索</el-button>
+              <el-button type="primary" :loading="loading" @click="doSearch">搜索</el-button>
             </template>
           </el-input>
         </div>
       </div>
 
       <div class="filter-section">
-        <div class="filter-title">选择朝代</div>
+        <div class="filter-title">可选：按朝代缩小范围（结果页二次筛选）</div>
         <div class="dynasty-options">
           <label v-for="dynasty in dynasties" :key="dynasty.value" class="dynasty-label">
             <input type="radio" v-model="selectedDynasty" :value="dynasty.value">
             <span>{{ dynasty.label }}</span>
           </label>
         </div>
-
         <div class="dynasty-options">
           <label v-for="dynasty in dynasties2" :key="dynasty.value" class="dynasty-label">
             <input type="radio" v-model="selectedDynasty" :value="dynasty.value">
             <span>{{ dynasty.label }}</span>
           </label>
         </div>
-
         <div class="confirm-button-wrapper">
-          <el-button type="primary" @click="confirmSearch">确定</el-button>
+          <el-button type="primary" :loading="loading" @click="doSearch">确定</el-button>
         </div>
       </div>
     </div>
 
-    <MainFooter></MainFooter>
+    <MainFooter />
   </div>
 </template>
 
 <script>
-import MainHeader from '../../components/MainHeader/MainHeader'
-import MainFooter from '../../components/MainFooter/MainFooter'
-import axios from 'axios'
+import MainHeader from '../../components/MainHeader/MainHeader.vue'
+import MainFooter from '../../components/MainFooter/MainFooter.vue'
+import { ElMessage } from 'element-plus'
+
+const DYNASTY_MAP = {
+  tang: 'Tang Dynasty',
+  song: 'Song Dynasty',
+  yuan: 'Yuan Dynasty',
+  ming: 'Ming Dynasty',
+  qing: 'Qing Dynasty',
+  beiwei: 'Northern Wei Dynasty',
+  zhou: 'Zhou Dynasty',
+  dongzhou: 'Eastern Zhou Dynasty',
+  nansong: 'Northern Song',
+  donghan: 'Eastern Han Dynasty',
+  xihan: 'Western Han Dynasty',
+  zhongshang: 'Shang Dynasty'
+}
 
 export default {
   components: {
@@ -51,9 +69,8 @@ export default {
   },
   data () {
     return {
-      in_form: {
-        keyword: ''
-      },
+      loading: false,
+      in_form: { keyword: '' },
       selectedDynasty: '',
       dynasties: [
         { label: '唐', value: 'tang' },
@@ -74,24 +91,20 @@ export default {
     }
   },
   methods: {
-    res_res () {
-      axios.post('http://localhost:8085/search/obscure', this.in_form).then((response) => {
-        console.log(response.data)
-        if (response.data.state === 200) {
-          this.$router.push({ path: '/result', query: { keyword: this.in_form.keyword } })
-        } else {
-          alert(response.data)
-        }
-      }).catch(function (error) {
-        console.log(error)
-        this.$router.push({ path: '/result', query: { keyword: this.in_form.keyword } })
-      })
-    },
-    confirmSearch () {
-      const params = {}
-      if (this.in_form.keyword) params.keyword = this.in_form.keyword
-      if (this.selectedDynasty) params.dynasty = this.selectedDynasty
-      this.$router.push({ path: '/result', query: params })
+    doSearch () {
+      const keyword = (this.in_form.keyword || '').trim()
+      if (!keyword) {
+        ElMessage.warning('请输入搜索关键字')
+        return
+      }
+      const query = {
+        mode: 'obscure',
+        keyword
+      }
+      if (this.selectedDynasty) {
+        query.filterDynasty = DYNASTY_MAP[this.selectedDynasty] || this.selectedDynasty
+      }
+      this.$router.push({ path: '/result', query })
     }
   }
 }
@@ -109,7 +122,7 @@ export default {
   margin-bottom: 50px;
 
   .search-box-wrapper {
-    max-width: 500px;
+    max-width: 560px;
     margin: 0 auto;
   }
 
@@ -118,21 +131,20 @@ export default {
   }
 
   :deep(.el-button--primary) {
-    background-color: #8B4513 !important;
-    border-color: #8B4513 !important;
+    background-color: #8b4513 !important;
+    border-color: #8b4513 !important;
     height: 45px;
     color: #fff !important;
 
     &:hover {
-      background-color: #6B3510 !important;
-      border-color: #6B3510 !important;
-      color: #fff !important;
+      background-color: #6b3510 !important;
+      border-color: #6b3510 !important;
     }
   }
 }
 
 .filter-section {
-  max-width: 600px;
+  max-width: 720px;
   margin: 0 auto;
   text-align: center;
 
@@ -165,8 +177,8 @@ export default {
       background: #fff8f0;
     }
 
-    input[type="radio"] {
-      accent-color: #8B4513;
+    input[type='radio'] {
+      accent-color: #8b4513;
     }
 
     span {
@@ -179,12 +191,12 @@ export default {
     margin-top: 30px;
 
     :deep(.el-button--primary) {
-      background-color: #8B4513 !important;
-      border-color: #8B4513 !important;
+      background-color: #8b4513 !important;
+      border-color: #8b4513 !important;
 
       &:hover {
-        background-color: #6B3510 !important;
-        border-color: #6B3510 !important;
+        background-color: #6b3510 !important;
+        border-color: #6b3510 !important;
       }
     }
   }
