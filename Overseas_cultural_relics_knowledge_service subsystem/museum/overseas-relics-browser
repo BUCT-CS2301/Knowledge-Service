@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>海外藏中国文物 - 数据浏览</title>
+  <!-- 引入Vue -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <!-- 引入Element Plus -->
+  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+  <script src="https://unpkg.com/element-plus/dist/index.full.js"></script>
+  <style>
+    .container { max-width: 1400px; margin: 30px auto; padding: 0 20px; }
+    .filter-bar { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+    .card-img { width: 100%; height: 180px; object-fit: cover; }
+    .detail-img { width: 100%; max-height: 500px; object-fit: contain; }
+  </style>
+</head>
+<body>
+  <div id="app" class="container">
+    <el-page-header @back="goBack" content="数据浏览：海外藏中国文物"></el-page-header>
+
+    <!-- 筛选栏 -->
+    <div class="filter-bar" v-if="!showDetail">
+      <el-select v-model="filter.museum" placeholder="博物馆" @change="getList">
+        <el-option label="大英博物馆" value="大英博物馆"></el-option>
+        <el-option label="卢浮宫" value="卢浮宫"></el-option>
+        <el-option label="大都会博物馆" value="大都会博物馆"></el-option>
+      </el-select>
+
+      <el-select v-model="filter.dynasty" placeholder="年代" @change="getList">
+        <el-option label="唐代" value="唐代"></el-option>
+        <el-option label="宋代" value="宋代"></el-option>
+        <el-option label="明代" value="明代"></el-option>
+      </el-select>
+
+      <el-select v-model="filter.type" placeholder="文物类型" @change="getList">
+        <el-option label="陶瓷" value="陶瓷"></el-option>
+        <el-option label="青铜" value="青铜"></el-option>
+        <el-option label="书画" value="书画"></el-option>
+      </el-select>
+
+      <el-select v-model="sortBy" placeholder="排序" @change="getList">
+        <el-option label="按名称" value="name"></el-option>
+        <el-option label="按年代" value="dynasty"></el-option>
+      </el-select>
+    </div>
+
+    <!-- 文物列表 -->
+    <div v-if="!showDetail">
+      <el-row :gutter="20">
+        <el-col :span="6" v-for="item in pageList" :key="item.id">
+          <el-card @click="toDetail(item)">
+            <img :src="item.img" class="card-img">
+            <div style="margin-top:10px;">
+              <h3>{{ item.name }}</h3>
+              <p>{{ item.dynasty }}｜{{ item.museum }}</p>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
+
+      <el-pagination
+        v-model:current-page="page"
+        :page-size="8"
+        :total="total"
+        style="margin-top:20px; text-align:center"
+        @current-change="getPageList"
+      ></el-pagination>
+    </div>
+
+    <!-- 详情页 -->
+    <div v-if="showDetail">
+      <img :src="currentDetail.img" class="detail-img" @click="previewImg">
+      <el-descriptions :column="1" border style="margin-top:20px;">
+        <el-descriptions-item label="文物名称">{{ currentDetail.name }}</el-descriptions-item>
+        <el-descriptions-item label="年代">{{ currentDetail.dynasty }}</el-descriptions-item>
+        <el-descriptions-item label="收藏博物馆">{{ currentDetail.museum }}</el-descriptions-item>
+        <el-descriptions-item label="文物类型">{{ currentDetail.type }}</el-descriptions-item>
+        <el-descriptions-item label="文物描述">{{ currentDetail.desc }}</el-descriptions-item>
+      </el-descriptions>
+    </div>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+    createApp({
+      setup() {
+        const Vue = Vue;
+        const state = Vue.reactive({
+          // 本地文物数据（代替后端接口）
+          dataList: [
+            { id:1, name:"唐三彩骆驼", dynasty:"唐代", museum:"大英博物馆", type:"陶瓷", desc:"唐代丝绸之路代表性文物", img:"https://pic.baike.soso.com/ugc/baikepic2/18002/20210907/1/16310429993713999999_981203911.jpg" },
+            { id:2, name:"宋代青瓷瓶", dynasty:"宋代", museum:"卢浮宫", type:"陶瓷", desc:"宋代五大名窑精品", img:"https://img0.baidu.com/it/u=826677386,2500371804&fm=253&fmt=auto&app=138&f=JPEG" },
+            { id:3, name:"明代山水画", dynasty:"明代", museum:"大都会博物馆", type:"书画", desc:"明代文人画代表", img:"https://img2.baidu.com/it/u=123456789" },
+            { id:4, name:"商周青铜鼎", dynasty:"商周", museum:"大英博物馆", type:"青铜", desc:"商周青铜礼器", img:"https://img1.baidu.com/it/u=987654321" },
+            { id:5, name:"唐代陶俑", dynasty:"唐代", museum:"卢浮宫", type:"陶瓷", desc:"唐代人物陶俑", img:"https://img0.baidu.com/it/u=112233445" },
+          ],
+          filter: { museum: "", dynasty: "", type: "" },
+          sortBy: "",
+          showDetail: false,
+          currentDetail: {},
+          page: 1,
+          pageSize: 8,
+          total: 0,
+          pageList: []
+        });
+
+        // 筛选+排序
+        const getList = () => {
+          let res = [...state.dataList];
+          if (state.filter.museum) res = res.filter(i => i.museum === state.filter.museum);
+          if (state.filter.dynasty) res = res.filter(i => i.dynasty === state.filter.dynasty);
+          if (state.filter.type) res = res.filter(i => i.type === state.filter.type);
+          if (state.sortBy === "name") res.sort((a,b) => a.name.localeCompare(b.name));
+          if (state.sortBy === "dynasty") res.sort((a,b) => a.dynasty.localeCompare(b.dynasty));
+          state.dataList = res;
+          state.total = res.length;
+          getPageList();
+        };
+
+        // 分页
+        const getPageList = () => {
+          const start = (state.page-1)*state.pageSize;
+          const end = start + state.pageSize;
+          state.pageList = state.dataList.slice(start, end);
+        };
+
+        // 详情
+        const toDetail = (item) => {
+          state.currentDetail = item;
+          state.showDetail = true;
+        };
+        const goBack = () => { state.showDetail = false; };
+        const previewImg = () => { ElImageViewer.open({ urlList: [state.currentDetail.img] }); };
+
+        Vue.onMounted(() => { getList(); });
+        return { ...state, getList, getPageList, toDetail, goBack, previewImg };
+      }
+    }).use(ElementPlus).mount("#app");
+  </script>
+</body>
+</html>
