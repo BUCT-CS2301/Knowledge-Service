@@ -15,6 +15,7 @@
         </el-select>
 
         <el-button type="primary" @click="showFilterPanel = !showFilterPanel">筛选条件</el-button>
+        <el-button @click="refreshData">刷新数据</el-button>
       </div>
 
       <div class="filter-panel" v-if="showFilterPanel">
@@ -34,9 +35,9 @@
         </div>
       </div>
 
-      <div class="timeline-container">
+      <div class="timeline-container" v-loading="isLoading">
         <div class="timeline-line">
-          <div class="timeline-progress"></div>
+          <div class="timeline-progress" :style="{ width: progressWidth }"></div>
 
           <div
             v-for="(period, index) in timelineData"
@@ -63,6 +64,7 @@
               v-for="(relic, index) in currentPeriod.relics"
               :key="index"
               class="relic-card"
+              @click="showRelicDetail(relic)"
             >
               <img :src="relic.image" :alt="relic.name" class="relic-image">
               <div class="relic-info">
@@ -71,6 +73,10 @@
                 <p class="relic-museum">{{ relic.museum }}</p>
               </div>
             </div>
+          </div>
+
+          <div v-if="currentPeriod.relics.length === 0" class="empty-state">
+            <el-empty description="该时期暂无文物数据"></el-empty>
           </div>
         </div>
       </div>
@@ -81,7 +87,8 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import axios from 'axios'
 import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
 
@@ -92,11 +99,13 @@ export default {
     MainFooter
   },
   setup() {
-    const selectedPeriod = ref(2)
+    const selectedPeriod = ref(0)
     const selectedDynasty = ref('all')
     const showFilterPanel = ref(false)
     const timeRange = ref([])
     const selectedTypes = ref([])
+    const isLoading = ref(false)
+    const timelineData = ref([])
 
     const dynasties = [
       { label: '商周', value: 'shangzhou' },
@@ -106,61 +115,97 @@ export default {
       { label: '明清', value: 'mingqing' }
     ]
 
-    const timelineData = ref([
-      {
-        dynasty: '商周',
-        year: '约公元前1600-256年',
-        description: '青铜文明鼎盛时期，青铜器工艺达到巅峰，出现大量精美的礼器和兵器。',
-        relics: [
-          { name: '青铜方鼎', type: '青铜器', museum: '大英博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=ancient%20chinese%20bronze%20ding%20vessel%20shang%20dynasty&image_size=square' },
-          { name: '青铜爵', type: '青铜器', museum: '大都会博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=ancient%20chinese%20bronze%20jue%20wine%20cup&image_size=square' }
-        ]
-      },
-      {
-        dynasty: '秦汉',
-        year: '公元前221-220年',
-        description: '统一王朝建立，陶瓷、漆器工艺发展，丝绸之路开始形成。',
-        relics: [
-          { name: '秦兵马俑', type: '陶俑', museum: '秦始皇兵马俑博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=terracotta%20warrior%20qin%20dynasty&image_size=square' },
-          { name: '汉白玉雕', type: '玉器', museum: '波士顿美术馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=white%20jade%20carving%20han%20dynasty&image_size=square' }
-        ]
-      },
-      {
-        dynasty: '隋唐',
-        year: '581-907年',
-        description: '盛世繁荣，唐三彩、青花瓷兴起，中外文化交流频繁。',
-        relics: [
-          { name: '唐三彩骆驼', type: '陶瓷', museum: '故宫博物院', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Tang%20dynasty%20tri-colored%20pottery%20camel&image_size=square' },
-          { name: '唐代壁画', type: '绘画', museum: '敦煌研究院', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Dunhuang%20mural%20painting%20Tang%20dynasty&image_size=square' }
-        ]
-      },
-      {
-        dynasty: '宋元',
-        year: '960-1368年',
-        description: '瓷器工艺达到顶峰，五大名窑闻名于世，文人书画兴盛。',
-        relics: [
-          { name: '汝窑青瓷', type: '陶瓷', museum: '大英博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Ru%20kiln%20celadon%20porcelain%20song%20dynasty&image_size=square' },
-          { name: '清明上河图', type: '书画', museum: '故宫博物院', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Qingming%20Scroll%20painting%20song%20dynasty&image_size=square' }
-        ]
-      },
-      {
-        dynasty: '明清',
-        year: '1368-1912年',
-        description: '官窑瓷器精美绝伦，珐琅彩、粉彩等新工艺出现。',
-        relics: [
-          { name: '青花瓷瓶', type: '陶瓷', museum: '大英博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=blue%20and%20white%20porcelain%20vase%20ming%20dynasty&image_size=square' },
-          { name: '珐琅彩瓷', type: '陶瓷', museum: '大都会博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=enamel%20porcelain%20qing%20dynasty&image_size=square' }
-        ]
-      }
-    ])
+    const progressWidth = computed(() => {
+      return `${((selectedPeriod.value + 1) / timelineData.value.length) * 100}%`
+    })
 
     const currentPeriod = computed(() => {
+      if (timelineData.value.length === 0) {
+        return { dynasty: '', year: '', description: '', relics: [] }
+      }
       return timelineData.value[selectedPeriod.value]
     })
 
     const selectPeriod = (index) => {
       selectedPeriod.value = index
     }
+
+    const loadMockData = () => {
+      timelineData.value = [
+        {
+          dynasty: '商周',
+          year: '约公元前1600-256年',
+          description: '青铜文明鼎盛时期，青铜器工艺达到巅峰，出现大量精美的礼器和兵器。',
+          relics: [
+            { name: '青铜方鼎', type: '青铜器', museum: '大英博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=ancient%20chinese%20bronze%20ding%20vessel%20shang%20dynasty&image_size=square' },
+            { name: '青铜爵', type: '青铜器', museum: '大都会博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=ancient%20chinese%20bronze%20jue%20wine%20cup&image_size=square' }
+          ]
+        },
+        {
+          dynasty: '秦汉',
+          year: '公元前221-220年',
+          description: '统一王朝建立，陶瓷、漆器工艺发展，丝绸之路开始形成。',
+          relics: [
+            { name: '秦兵马俑', type: '陶俑', museum: '秦始皇兵马俑博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=terracotta%20warrior%20qin%20dynasty&image_size=square' },
+            { name: '汉白玉雕', type: '玉器', museum: '波士顿美术馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=white%20jade%20carving%20han%20dynasty&image_size=square' }
+          ]
+        },
+        {
+          dynasty: '隋唐',
+          year: '581-907年',
+          description: '盛世繁荣，唐三彩、青花瓷兴起，中外文化交流频繁。',
+          relics: [
+            { name: '唐三彩骆驼', type: '陶瓷', museum: '故宫博物院', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Tang%20dynasty%20tri-colored%20pottery%20camel&image_size=square' },
+            { name: '唐代壁画', type: '绘画', museum: '敦煌研究院', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Dunhuang%20mural%20painting%20Tang%20dynasty&image_size=square' }
+          ]
+        },
+        {
+          dynasty: '宋元',
+          year: '960-1368年',
+          description: '瓷器工艺达到顶峰，五大名窑闻名于世，文人书画兴盛。',
+          relics: [
+            { name: '汝窑青瓷', type: '陶瓷', museum: '大英博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Ru%20kiln%20celadon%20porcelain%20song%20dynasty&image_size=square' },
+            { name: '清明上河图', type: '书画', museum: '故宫博物院', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Qingming%20Scroll%20painting%20song%20dynasty&image_size=square' }
+          ]
+        },
+        {
+          dynasty: '明清',
+          year: '1368-1912年',
+          description: '官窑瓷器精美绝伦，珐琅彩、粉彩等新工艺出现。',
+          relics: [
+            { name: '青花瓷瓶', type: '陶瓷', museum: '大英博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=blue%20and%20white%20porcelain%20vase%20ming%20dynasty&image_size=square' },
+            { name: '珐琅彩瓷', type: '陶瓷', museum: '大都会博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=enamel%20porcelain%20qing%20dynasty&image_size=square' }
+          ]
+        }
+      ]
+    }
+
+    const refreshData = async () => {
+      isLoading.value = true
+      try {
+        const response = await axios.get('http://localhost:8085/api/v1/data/timeline')
+        if (response.data && response.data.code === 200 && response.data.data) {
+          timelineData.value = response.data.data
+          if (timelineData.value.length > 0 && selectedPeriod.value >= timelineData.value.length) {
+            selectedPeriod.value = 0
+          }
+        } else {
+          loadMockData()
+        }
+      } catch (error) {
+        console.error('Failed to fetch timeline data:', error)
+        loadMockData()
+      }
+      isLoading.value = false
+    }
+
+    const showRelicDetail = (relic) => {
+      console.log('Relic detail:', relic)
+    }
+
+    onMounted(() => {
+      refreshData()
+    })
 
     return {
       selectedPeriod,
@@ -171,7 +216,11 @@ export default {
       dynasties,
       timelineData,
       currentPeriod,
-      selectPeriod
+      progressWidth,
+      selectPeriod,
+      refreshData,
+      showRelicDetail,
+      isLoading
     }
   }
 }
@@ -263,17 +312,15 @@ export default {
   padding: 0 20px;
   border-bottom: 3px solid #eee;
   margin-bottom: 30px;
+}
 
-  &::before {
-    content: '';
-    position: absolute;
-    bottom: -3px;
-    left: 0;
-    width: calc(20% * var(--progress, 2));
-    height: 3px;
-    background: #8B4513;
-    transition: width 0.5s ease;
-  }
+.timeline-progress {
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  height: 3px;
+  background: #8B4513;
+  transition: width 0.5s ease;
 }
 
 .timeline-node {
@@ -282,6 +329,7 @@ export default {
   align-items: center;
   cursor: pointer;
   transition: transform 0.3s;
+  z-index: 1;
 
   &:hover {
     transform: translateY(-3px);
@@ -361,6 +409,7 @@ export default {
   border-radius: 12px;
   overflow: hidden;
   transition: transform 0.3s, box-shadow 0.3s;
+  cursor: pointer;
 
   &:hover {
     transform: translateY(-5px);
@@ -393,5 +442,10 @@ export default {
       color: #999;
     }
   }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
 }
 </style>

@@ -16,7 +16,7 @@
           <el-option label="大都会博物馆" value="met"></el-option>
           <el-option label="卢浮宫" value="louvre"></el-option>
         </el-select>
-        <el-button type="primary" @click="refreshData">刷新数据</el-button>
+        <el-button type="primary" @click="refreshData" :loading="isLoading">刷新数据</el-button>
       </div>
 
       <div class="stats-grid">
@@ -144,7 +144,8 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import axios from 'axios'
 import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
 
@@ -157,48 +158,98 @@ export default {
   setup() {
     const dateRange = ref([])
     const selectedMuseum = ref('all')
+    const isLoading = ref(false)
 
-    const stats = ref({
+    const mockStats = {
       totalRelics: 128650,
       museumCount: 156,
       categoryCount: 32,
       countryCount: 48
-    })
+    }
 
-    const typeDistribution = ref([
+    const mockTypeDistribution = [
       { name: '青铜器', percentage: 28, color: '#8B4513' },
       { name: '陶瓷', percentage: 35, color: '#A0522D' },
       { name: '书画', percentage: 18, color: '#D2691E' },
       { name: '玉器', percentage: 12, color: '#CD853F' },
       { name: '其他', percentage: 7, color: '#DEB887' }
-    ])
+    ]
 
-    const dynastyDistribution = ref([
+    const mockDynastyDistribution = [
       { dynasty: '商周', count: 15200, percentage: 20, color: '#8B4513' },
       { dynasty: '秦汉', count: 12800, percentage: 17, color: '#A0522D' },
       { dynasty: '隋唐', count: 18500, percentage: 24, color: '#D2691E' },
       { dynasty: '宋元', count: 16200, percentage: 21, color: '#CD853F' },
       { dynasty: '明清', count: 13300, percentage: 18, color: '#DEB887' }
-    ])
+    ]
 
-    const museumRanking = ref([
+    const mockMuseumRanking = [
       { name: '大英博物馆', location: '伦敦, 英国', count: 23000 },
       { name: '大都会博物馆', location: '纽约, 美国', count: 15000 },
       { name: '东京国立博物馆', location: '东京, 日本', count: 12000 },
       { name: '卢浮宫', location: '巴黎, 法国', count: 8000 },
       { name: '柏林亚洲艺术博物馆', location: '柏林, 德国', count: 6000 }
-    ])
+    ]
 
-    const trendYears = ['2019', '2020', '2021', '2022', '2023', '2024']
-    const trendData = [2800, 3200, 2900, 4100, 3800, 4500]
+    const mockTrendYears = ['2019', '2020', '2021', '2022', '2023', '2024']
+    const mockTrendData = [2800, 3200, 2900, 4100, 3800, 4500]
 
-    const materialDistribution = ref([
+    const mockMaterialDistribution = [
       { name: '青铜', percentage: 25, color: '#8B4513' },
       { name: '瓷', percentage: 32, color: '#A0522D' },
       { name: '玉', percentage: 18, color: '#D2691E' },
       { name: '纸', percentage: 15, color: '#CD853F' },
       { name: '金', percentage: 10, color: '#DEB887' }
-    ])
+    ]
+
+    const stats = ref({ ...mockStats })
+    const typeDistribution = ref([...mockTypeDistribution])
+    const dynastyDistribution = ref([...mockDynastyDistribution])
+    const museumRanking = ref([...mockMuseumRanking])
+    const trendYears = ref([...mockTrendYears])
+    const trendData = ref([...mockTrendData])
+    const materialDistribution = ref([...mockMaterialDistribution])
+
+    const loadMockData = () => {
+      stats.value = { ...mockStats }
+      typeDistribution.value = [...mockTypeDistribution]
+      dynastyDistribution.value = [...mockDynastyDistribution]
+      museumRanking.value = [...mockMuseumRanking]
+      trendYears.value = [...mockTrendYears]
+      trendData.value = [...mockTrendData]
+      materialDistribution.value = [...mockMaterialDistribution]
+    }
+
+    const fetchDashboardData = async () => {
+      isLoading.value = true
+      try {
+        const response = await axios.get('http://localhost:8085/api/v1/data/dashboard')
+        if (response.data && response.data.data) {
+          const data = response.data.data
+          if (data.stats) stats.value = data.stats
+          if (data.typeDistribution) typeDistribution.value = data.typeDistribution
+          if (data.dynastyDistribution) dynastyDistribution.value = data.dynastyDistribution
+          if (data.museumRanking) museumRanking.value = data.museumRanking
+          if (data.trendYears) trendYears.value = data.trendYears
+          if (data.trendData) trendData.value = data.trendData
+          if (data.materialDistribution) materialDistribution.value = data.materialDistribution
+        } else {
+          loadMockData()
+        }
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error)
+        loadMockData()
+      }
+      isLoading.value = false
+    }
+
+    const refreshData = () => {
+      fetchDashboardData()
+    }
+
+    onMounted(() => {
+      fetchDashboardData()
+    })
 
     const totalPercentage = computed(() => typeDistribution.value.reduce((sum, item) => sum + item.percentage, 0))
 
@@ -237,18 +288,16 @@ export default {
       console.log('Selected type:', typeDistribution.value[index].name)
     }
 
-    const refreshData = () => {
-      console.log('Refreshing data...')
-    }
-
     return {
       dateRange,
       selectedMuseum,
+      isLoading,
       stats,
       typeDistribution,
       dynastyDistribution,
       museumRanking,
       trendYears,
+      trendData,
       materialDistribution,
       pieSlices,
       maxMuseumCount,

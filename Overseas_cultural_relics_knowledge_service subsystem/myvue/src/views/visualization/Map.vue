@@ -18,6 +18,10 @@
         </el-select>
 
         <el-button type="primary" @click="showLegend = !showLegend">图例</el-button>
+        
+        <el-button type="default" @click="refreshData" :loading="isLoading">
+          <i class="el-icon-refresh"></i> 刷新
+        </el-button>
       </div>
 
       <div class="map-container">
@@ -114,7 +118,8 @@
 </template>
 
 <script>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
+import axios from 'axios'
 import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
 
@@ -129,9 +134,12 @@ export default {
     const selectedLocation = ref(null)
     const hoveredLocation = ref(null)
     const showLegend = ref(false)
+    const isLoading = ref(false)
     const tooltipStyle = reactive({ left: '0px', top: '0px' })
 
-    const mapLocations = ref([
+    const mapLocations = ref([])
+
+    const mockLocations = [
       { name: '大英博物馆', city: '伦敦', country: '英国', x: 320, y: 110, count: 23000 },
       { name: '大都会博物馆', city: '纽约', country: '美国', x: 680, y: 100, count: 15000 },
       { name: '卢浮宫', city: '巴黎', country: '法国', x: 300, y: 100, count: 8000 },
@@ -140,7 +148,35 @@ export default {
       { name: '柏林亚洲艺术博物馆', city: '柏林', country: '德国', x: 360, y: 90, count: 6000 },
       { name: '波士顿美术馆', city: '波士顿', country: '美国', x: 670, y: 95, count: 4500 },
       { name: '韩国国立中央博物馆', city: '首尔', country: '韩国', x: 690, y: 260, count: 3800 }
-    ])
+    ]
+
+    const loadMockData = () => {
+      mapLocations.value = mockLocations
+    }
+
+    const fetchLocations = async () => {
+      isLoading.value = true
+      try {
+        const response = await axios.get('http://localhost:8085/api/v1/data/geo-map')
+        if (response.data && response.data.data) {
+          mapLocations.value = response.data.data
+        } else {
+          loadMockData()
+        }
+      } catch (error) {
+        console.error('Failed to fetch map data:', error)
+        loadMockData()
+      }
+      isLoading.value = false
+    }
+
+    const refreshData = () => {
+      fetchLocations()
+    }
+
+    onMounted(() => {
+      fetchLocations()
+    })
 
     const selectLocation = (index) => {
       selectedLocation.value = selectedLocation.value === index ? null : index
@@ -162,11 +198,13 @@ export default {
       selectedLocation,
       hoveredLocation,
       showLegend,
+      isLoading,
       tooltipStyle,
       mapLocations,
       selectLocation,
       hoverLocation,
-      unhoverLocation
+      unhoverLocation,
+      refreshData
     }
   }
 }
