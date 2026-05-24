@@ -227,12 +227,12 @@ export default {
         if (response.data && response.data.data) {
           const data = response.data.data
           if (data.stats) stats.value = data.stats
-          if (data.typeDistribution) typeDistribution.value = data.typeDistribution
-          if (data.dynastyDistribution) dynastyDistribution.value = data.dynastyDistribution
-          if (data.museumRanking) museumRanking.value = data.museumRanking
-          if (data.trendYears) trendYears.value = data.trendYears
-          if (data.trendData) trendData.value = data.trendData
-          if (data.materialDistribution) materialDistribution.value = data.materialDistribution
+          if (Array.isArray(data.typeDistribution)) typeDistribution.value = data.typeDistribution
+          if (Array.isArray(data.dynastyDistribution)) dynastyDistribution.value = data.dynastyDistribution
+          if (Array.isArray(data.museumRanking)) museumRanking.value = data.museumRanking
+          if (Array.isArray(data.trendYears)) trendYears.value = data.trendYears
+          if (Array.isArray(data.trendData)) trendData.value = data.trendData
+          if (Array.isArray(data.materialDistribution)) materialDistribution.value = data.materialDistribution
         } else {
           loadMockData()
         }
@@ -265,14 +265,18 @@ export default {
 
     const maxMuseumCount = computed(() => Math.max(...museumRanking.value.map(m => m.count)))
 
-    const maxTrendValue = computed(() => Math.max(...trendData))
+    const maxTrendValue = computed(() => {
+      if (!Array.isArray(trendData.value) || trendData.value.length === 0) return 1
+      return Math.max(...trendData.value)
+    })
 
     const trendPoints = computed(() => {
+      if (!Array.isArray(trendData.value) || trendData.value.length === 0) return []
       const width = 240
       const height = 160
       const padding = 30
-      return trendData.map((value, index) => ({
-        x: padding + (index / (trendData.length - 1)) * width,
+      return trendData.value.map((value, index) => ({
+        x: padding + (index / (trendData.value.length - 1)) * width,
         y: padding + height - (value / maxTrendValue.value) * height
       }))
     })
