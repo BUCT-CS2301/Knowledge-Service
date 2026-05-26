@@ -15,29 +15,6 @@
         <div class="search-container">
           <h1 class="search-title">探索海外文物世界</h1>
           <p class="search-subtitle">发现珍贵的文化遗产，了解千年历史文明</p>
-          <div class="search-box">
-            <input
-              type="text"
-              v-model="searchKeyword"
-              class="search-input"
-              placeholder="搜索文物名称、博物馆、年代..."
-              @keyup.enter="handleSearch"
-            >
-            <button class="search-button" @click="handleSearch">
-              搜索
-            </button>
-          </div>
-          <div class="hot-search">
-            <span class="hot-label">热门搜索：</span>
-            <span
-              v-for="tag in hotTags"
-              :key="tag"
-              class="hot-tag"
-              @click="searchKeyword = tag; handleSearch()"
-            >
-              {{ tag }}
-            </span>
-          </div>
         </div>
       </div>
     </div>
@@ -47,7 +24,12 @@
         <h2 class="section-title">推荐文物信息</h2>
         <div class="relic-grid">
           <div class="relic-card" v-for="relic in recommendedRelics" :key="relic.id">
-            <img :src="relic.image" :alt="relic.name" class="relic-image">
+            <img
+              :src="relic.image"
+              :alt="relic.name"
+              class="relic-image"
+              @error="handleRelicImageError($event, relic)"
+            >
             <div class="relic-info">
               <span class="relic-name">{{ relic.name }}</span>
               <div class="relic-actions">
@@ -86,7 +68,13 @@
       <div class="section-item">
         <h2 class="section-title">新闻资讯</h2>
         <div class="news-list">
-          <div class="news-item" v-for="news in newsList" :key="news.id">
+          <div
+            class="news-item"
+            v-for="news in newsList"
+            :key="news.id"
+            @click="openNews(news)"
+            :class="{ 'news-clickable': news.url }"
+          >
             <div class="news-dot"></div>
             <span class="news-title">{{ news.title }}</span>
             <span class="news-date">{{ news.date }}</span>
@@ -147,8 +135,6 @@ export default {
   },
   data () {
     return {
-      searchKeyword: '',
-      hotTags: ['青铜器', '敦煌壁画', '青花瓷', '大英博物馆', '女史箴图'],
       carouselImages: [
         carouselImg1,
         carouselImg2,
@@ -160,11 +146,11 @@ export default {
       hotMuseums: [],
       isLoading: true,  // 添加加载状态
       newsList: [
-        { id: 1, title: '海外流失文物数字化回归项目启动', date: '2026-04-25' },
-        { id: 2, title: '大英博物馆举办中国古代青铜器特展', date: '2026-04-23' },
-        { id: 3, title: '敦煌壁画数字展在全球巡回展出', date: '2026-04-20' },
-        { id: 4, title: '新发现唐代文物填补历史空白', date: '2026-04-18' },
-        { id: 5, title: '数字博物馆云平台用户突破100万', date: '2026-04-15' }
+        { id: 1, title: '春天在国家博物馆遇见瓷器之美', date: '2023-03-21', url: 'https://mp.weixin.qq.com/s/bTdWuO3fd4j9c2a6XE7mjQ' },
+        { id: 2, title: '国博展讯 | “中国古代饮食文化展”闭展调整', date: '2023-02-14', url: 'https://mp.weixin.qq.com/s/4Z81W7AaH0tN88Fo-PJW2A' },
+        { id: 3, title: '来国博看中国 | “中国古代饮食文化展”上新！', date: '2023-02-20', url: 'https://mp.weixin.qq.com/s/G66UHMUCCORB4gqFBavZAA' },
+        { id: 4, title: '去国博赴一场宋元海丝盛宴', date: '2023-03-20', url: 'https://app.guangmingdaily.cn/as/opened/n/4bdc98799ffb45f19137ca2392261849' },
+        { id: 5, title: '数字博物馆云平台用户突破100万', date: '2026-04-15', url: '' }
       ],
       detailVisible: false,
       selectedRelic: null,
@@ -184,6 +170,12 @@ export default {
     }, 0)
   },
   methods: {
+    // 打开新闻链接
+    openNews (news) {
+      if (news.url) {
+        window.open(news.url, '_blank')
+      }
+    },
     // 获取推荐文物列表
     async fetchRecommendedRelics () {
       try {
@@ -251,6 +243,7 @@ export default {
           id: 149146,
           name: 'Raft Cup',
           image: 'https://openaccess-cdn.clevelandart.org/1977.7/1977.7_web.jpg',
+          backupImage: 'https://picsum.photos/seed/raftcup/400/300',
           description: 'The figure watching the stars is believed to be the messenger Zhang Qian (died 114 BCE). Legend says he lost his way in the Milky Way, where he met the Weaving Maid who gave him a stone from her loom.',
           museum: 'The Cleveland Museum of Art',
           period: '1300s-1400s'
@@ -259,6 +252,7 @@ export default {
           id: 137198,
           name: 'Jar with Lion-Head Handles',
           image: 'https://openaccess-cdn.clevelandart.org/1962.154/1962.154_web.jpg',
+          backupImage: 'https://picsum.photos/seed/jarlion/400/300',
           description: 'Appreciated for its strong profile, brilliant blue color, and firm delineation of the decorative patterns, this jar is a classic example of Yuan dynasty blue-and-white ware.',
           museum: 'The Cleveland Museum of Art',
           period: '1300s'
@@ -267,6 +261,7 @@ export default {
           id: 130130,
           name: 'Cup with Daoist Figures',
           image: 'https://openaccess-cdn.clevelandart.org/1952.510/1952.510_web.jpg',
+          backupImage: 'https://picsum.photos/seed/cupdaoist/400/300',
           description: 'During the Qing dynasty, Suzhou\'s best products were sent north to the capital. Those that met imperial approval were sometimes graced with Qianlong\'s mark.',
           museum: 'The Cleveland Museum of Art',
           period: '1736-95'
@@ -275,6 +270,7 @@ export default {
           id: 147084,
           name: 'Virupa',
           image: 'https://openaccess-cdn.clevelandart.org/1972.96/1972.96_web.jpg',
+          backupImage: 'https://picsum.photos/seed/virupa/400/300',
           description: 'Virupa is one of the great teachers in the history of tantric Buddhism. His posture references his ability to stop the sun; as an enlightened being, he can control phenomena of nature.',
           museum: 'The Cleveland Museum of Art',
           period: 'early 1400s'
@@ -289,11 +285,6 @@ export default {
         { id: 3, name: 'Penn Museum', location: 'Philadelphia, Pennsylvania, United States', image: 'https://picsum.photos/seed/penn/300/200' },
         { id: 4, name: 'The British Museum', location: 'London, United Kingdom', image: 'https://picsum.photos/seed/british/300/200' }
       ]
-    },
-    handleSearch () {
-      if (this.searchKeyword.trim()) {
-        this.$router.push({ path: '/keyword', query: { keyword: this.searchKeyword } })
-      }
     },
     viewDetail (relic) {
       this.$router.push({ path: '/relicDetail', query: { id: relic.id, name: relic.name } })
@@ -364,6 +355,14 @@ export default {
       localStorage.setItem('comments', JSON.stringify(comments))
       this.newComment = ''
       this.$message.success('评论成功')
+    },
+    handleRelicImageError (event, relic) {
+      // 图片加载失败时使用备用图片
+      if (relic.backupImage) {
+        event.target.src = relic.backupImage
+      } else {
+        event.target.src = 'https://via.placeholder.com/300x200?text=Image+Not+Available'
+      }
     }
   }
 }
@@ -663,6 +662,18 @@ export default {
       .news-date {
         font-size: 13px;
         color: #999;
+      }
+
+      &.news-clickable {
+        cursor: pointer;
+
+        &:hover {
+          background-color: #f9f9f9;
+        }
+
+        .news-title {
+          color: #8B4513;
+        }
       }
     }
   }

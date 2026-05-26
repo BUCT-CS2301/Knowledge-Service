@@ -5,7 +5,13 @@
     <div class="detail-container">
       <!-- 文物大图 -->
       <div class="relic-hero">
-        <img :src="relic.image" :alt="relic.name" class="hero-image">
+        <img
+          :src="relic.image"
+          :alt="relic.name"
+          class="hero-image"
+          @error="handleImageError"
+          loading="lazy"
+        >
         <div class="hero-overlay">
           <h1 class="relic-title">{{ relic.name }}</h1>
           <p class="relic-period">{{ relic.period }}</p>
@@ -107,29 +113,40 @@ export default {
     this.checkCollectionStatus()
   },
   methods: {
-    async loadRelicDetail () {
+    loadRelicDetail () {
       const relicId = this.$route.query.id
       const relicName = this.$route.query.name
 
-      // 优先从后端获取数据
+      // 优先使用静态默认数据，让页面立即显示
+      this.relic = this.getDefaultRelic(relicId, relicName)
+
+      // 在后台异步尝试获取后端数据（不阻塞页面渲染）
+      this.fetchFromBackend(relicId, relicName)
+    },
+    async fetchFromBackend (relicId, relicName) {
       try {
-        const response = await axios.get(`/api/v1/data/relics/${relicId}`)
+        const response = await axios.get(`/api/v1/data/relics/${relicId}`, {
+          timeout: 3000  // 3秒超时
+        })
         if (response.data.code === 200) {
           const data = response.data.data
           this.relic = {
             id: data.objectId || relicId,
             name: data.title || relicName,
-            image: data.imageUrl || 'https://via.placeholder.com/400/300?text=No+Image',
-            description: data.description || '暂无详细描述',
-            museum: data.museumId || '未知博物馆',
-            period: data.period || '未知年代'
+            image: data.imageUrl || this.relic.image,
+            description: data.description || this.relic.description,
+            museum: data.museumId || this.relic.museum,
+            period: data.period || this.relic.period
           }
         }
       } catch (error) {
         console.error('获取文物详情失败:', error)
-        // 使用默认数据
-        this.relic = this.getDefaultRelic(relicId, relicName)
+        // 后端不可用，保持默认数据不变
       }
+    },
+    handleImageError (e) {
+      // 图片加载失败时使用备用图片
+      e.target.src = 'https://via.placeholder.com/800x400?text=Image+Not+Available'
     },
     getDefaultRelic (id, name) {
       const relics = {

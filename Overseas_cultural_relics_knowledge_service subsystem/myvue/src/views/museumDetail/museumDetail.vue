@@ -1,7 +1,7 @@
 <template>
   <div class="museum-detail">
     <MainHeader></MainHeader>
-    
+
     <div class="detail-container">
       <!-- 博物馆图片 -->
       <div class="museum-hero">
@@ -58,15 +58,15 @@
           <h2 class="section-title">参观信息</h2>
           <div class="visit-info">
             <div class="visit-item">
-              <span class="visit-icon">📍</span>
+              <span class="visit-icon">地点：</span>
               <span class="visit-text">{{ museum.address }}</span>
             </div>
             <div class="visit-item">
-              <span class="visit-icon">⏰</span>
+              <span class="visit-icon">时间：</span>
               <span class="visit-text">{{ museum.openHours }}</span>
             </div>
             <div class="visit-item">
-              <span class="visit-icon">🎫</span>
+              <span class="visit-icon">门票：</span>
               <span class="visit-text">{{ museum.ticketInfo }}</span>
             </div>
           </div>
@@ -111,7 +111,7 @@ export default {
     loadMuseumDetail () {
       const museumId = this.$route.query.id
       const museumName = this.$route.query.name
-      
+
       // 根据博物馆名称加载对应的详情数据
       this.museum = this.getMuseumData(museumName || museumId)
       this.famousRelics = this.getFamousRelics(museumName || museumId)
@@ -175,7 +175,7 @@ export default {
           ticketInfo: '免费参观'
         }
       }
-      
+
       return museumData[museumName] || museumData['The British Museum']
     },
     getFamousRelics (museumName) {
@@ -201,7 +201,7 @@ export default {
           { id: 3, name: 'Terracotta Army', period: '210 BCE', image: 'https://picsum.photos/seed/british3/200/200' }
         ]
       }
-      
+
       return relicsData[museumName] || relicsData['The British Museum']
     }
   }
@@ -226,13 +226,13 @@ export default {
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 30px;
-  
+
   .hero-image {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
-  
+
   .hero-overlay {
     position: absolute;
     bottom: 0;
@@ -240,14 +240,14 @@ export default {
     right: 0;
     padding: 30px;
     background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
-    
+
     .museum-title {
       color: #fff;
       font-size: 36px;
       font-weight: bold;
       margin-bottom: 10px;
     }
-    
+
     .museum-location {
       color: #fff;
       font-size: 18px;
@@ -265,7 +265,7 @@ export default {
 
 .info-section {
   margin-bottom: 40px;
-  
+
   .section-title {
     font-size: 24px;
     font-weight: bold;
@@ -274,7 +274,7 @@ export default {
     padding-bottom: 10px;
     border-bottom: 2px solid #8B7355;
   }
-  
+
   .description {
     font-size: 16px;
     line-height: 1.8;
@@ -287,19 +287,19 @@ export default {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 20px;
-  
+
   .info-item {
     background-color: #f9f9f9;
     padding: 20px;
     border-radius: 8px;
-    
+
     .info-label {
       display: block;
       font-size: 14px;
       color: #999;
       margin-bottom: 8px;
     }
-    
+
     .info-value {
       font-size: 18px;
       font-weight: bold;
@@ -312,7 +312,7 @@ export default {
   display: flex;
   gap: 20px;
   flex-wrap: wrap;
-  
+
   .relic-item {
     width: calc(33.33% - 14px);
     background-color: #f9f9f9;
@@ -320,20 +320,20 @@ export default {
     overflow: hidden;
     cursor: pointer;
     transition: transform 0.3s ease;
-    
+
     &:hover {
       transform: translateY(-5px);
     }
-    
+
     .relic-img {
       width: 100%;
       height: 180px;
       object-fit: cover;
     }
-    
+
     .relic-info {
       padding: 15px;
-      
+
       .relic-name {
         display: block;
         font-size: 16px;
@@ -341,7 +341,7 @@ export default {
         color: #333;
         margin-bottom: 5px;
       }
-      
+
       .relic-period {
         font-size: 14px;
         color: #999;
@@ -356,16 +356,16 @@ export default {
     align-items: center;
     padding: 15px 0;
     border-bottom: 1px solid #eee;
-    
+
     &:last-child {
       border-bottom: none;
     }
-    
+
     .visit-icon {
       font-size: 24px;
       margin-right: 15px;
     }
-    
+
     .visit-text {
       font-size: 16px;
       color: #333;
@@ -377,19 +377,19 @@ export default {
   .info-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .famous-relics {
     .relic-item {
       width: calc(50% - 10px);
     }
   }
-  
+
   .museum-hero {
     height: 250px;
-    
+
     .hero-overlay {
       padding: 20px;
-      
+
       .museum-title {
         font-size: 24px;
       }
