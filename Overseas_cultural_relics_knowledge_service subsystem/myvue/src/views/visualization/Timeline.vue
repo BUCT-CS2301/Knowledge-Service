@@ -9,30 +9,7 @@
       </div>
 
       <div class="timeline-controls">
-        <el-select v-model="selectedDynasty" placeholder="选择朝代">
-          <el-option label="全部" value="all"></el-option>
-          <el-option v-for="dynasty in dynasties" :key="dynasty.value" :label="dynasty.label" :value="dynasty.value"></el-option>
-        </el-select>
-
-        <el-button type="primary" @click="showFilterPanel = !showFilterPanel">筛选条件</el-button>
         <el-button @click="refreshData">刷新数据</el-button>
-      </div>
-
-      <div class="filter-panel" v-if="showFilterPanel">
-        <div class="filter-row">
-          <label>时间范围:</label>
-          <el-date-picker v-model="timeRange" type="daterange" range-separator="至" start-placeholder="开始时间" end-placeholder="结束时间"></el-date-picker>
-        </div>
-        <div class="filter-row">
-          <label>文物类型:</label>
-          <el-checkbox-group v-model="selectedTypes">
-            <el-checkbox label="青铜器"></el-checkbox>
-            <el-checkbox label="陶瓷"></el-checkbox>
-            <el-checkbox label="书画"></el-checkbox>
-            <el-checkbox label="玉器"></el-checkbox>
-            <el-checkbox label="金银器"></el-checkbox>
-          </el-checkbox-group>
-        </div>
       </div>
 
       <div class="timeline-container" v-loading="isLoading">
@@ -100,20 +77,8 @@ export default {
   },
   setup() {
     const selectedPeriod = ref(0)
-    const selectedDynasty = ref('all')
-    const showFilterPanel = ref(false)
-    const timeRange = ref([])
-    const selectedTypes = ref([])
     const isLoading = ref(false)
     const timelineData = ref([])
-
-    const dynasties = [
-      { label: '商周', value: 'shangzhou' },
-      { label: '秦汉', value: 'qinhan' },
-      { label: '隋唐', value: 'suitang' },
-      { label: '宋元', value: 'songyuan' },
-      { label: '明清', value: 'mingqing' }
-    ]
 
     const progressWidth = computed(() => {
       return `${((selectedPeriod.value + 1) / timelineData.value.length) * 100}%`
@@ -131,14 +96,41 @@ export default {
     }
 
     const loadMockData = () => {
-      timelineData.value = [
+      const mockData = [
         {
-          dynasty: '商周',
-          year: '约公元前1600-256年',
-          description: '青铜文明鼎盛时期，青铜器工艺达到巅峰，出现大量精美的礼器和兵器。',
+          dynasty: '远古',
+          year: '约公元前5000-2000年',
+          description: '新石器时代，彩陶文化繁荣，玉器制作技艺开始发展。',
           relics: [
-            { name: '青铜方鼎', type: '青铜器', museum: '大英博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=ancient%20chinese%20bronze%20ding%20vessel%20shang%20dynasty&image_size=square' },
-            { name: '青铜爵', type: '青铜器', museum: '大都会博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=ancient%20chinese%20bronze%20jue%20wine%20cup&image_size=square' }
+            { name: '彩陶盆', type: '陶瓷', museum: '中国国家博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=neolithic%20painted%20pottery%20bowl%20chinese&image_size=square' },
+            { name: '玉琮', type: '玉器', museum: '大英博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=jade%20cong%20tube%20neolithic%20chinese&image_size=square' }
+          ]
+        },
+        {
+          dynasty: '夏商',
+          year: '约公元前2000-1046年',
+          description: '青铜时代早期，甲骨文出现，青铜礼器开始盛行。',
+          relics: [
+            { name: '青铜兽面纹鼎', type: '青铜器', museum: '故宫博物院', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=bronze%20ding%20vessel%20with%20animal%20mask%20shang%20dynasty&image_size=square' },
+            { name: '甲骨文', type: '文字', museum: '中国国家博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=oracle%20bone%20inscription%20shang%20dynasty&image_size=square' }
+          ]
+        },
+        {
+          dynasty: '西周',
+          year: '公元前1046-771年',
+          description: '礼乐制度确立，青铜器铭文发达，玉器工艺精湛。',
+          relics: [
+            { name: '毛公鼎', type: '青铜器', museum: '台北故宫博物院', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Maogong%20ding%20bronze%20vessel%20western%20zhou&image_size=square' },
+            { name: '玉圭', type: '玉器', museum: '大英博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=jade%20gui%20tablet%20zhou%20dynasty&image_size=square' }
+          ]
+        },
+        {
+          dynasty: '春秋战国',
+          year: '公元前770-221年',
+          description: '百家争鸣，青铜器走向世俗化，漆器工艺兴起。',
+          relics: [
+            { name: '越王勾践剑', type: '青铜器', museum: '湖北省博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=ancient%20chinese%20bronze%20sword%20spring%20autumn&image_size=square' },
+            { name: '曾侯乙编钟', type: '青铜器', museum: '湖北省博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=bronze%20bell%20set%20zeng%20hou%20yi&image_size=square' }
           ]
         },
         {
@@ -147,7 +139,16 @@ export default {
           description: '统一王朝建立，陶瓷、漆器工艺发展，丝绸之路开始形成。',
           relics: [
             { name: '秦兵马俑', type: '陶俑', museum: '秦始皇兵马俑博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=terracotta%20warrior%20qin%20dynasty&image_size=square' },
-            { name: '汉白玉雕', type: '玉器', museum: '波士顿美术馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=white%20jade%20carving%20han%20dynasty&image_size=square' }
+            { name: '马王堆帛画', type: '绘画', museum: '湖南省博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=silk%20painting%20mawangdui%20han%20dynasty&image_size=square' }
+          ]
+        },
+        {
+          dynasty: '三国两晋',
+          year: '220-589年',
+          description: '战乱频繁但文化繁荣，佛教艺术传入，绘画书法发展。',
+          relics: [
+            { name: '顾恺之女史箴图', type: '书画', museum: '大英博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Admonitions%20Scroll%20gu%20kaizhi%20painting&image_size=square' },
+            { name: '青瓷莲花尊', type: '陶瓷', museum: '故宫博物院', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=celadon%20lotus%20vase%20southern%20dynasty&image_size=square' }
           ]
         },
         {
@@ -156,7 +157,16 @@ export default {
           description: '盛世繁荣，唐三彩、青花瓷兴起，中外文化交流频繁。',
           relics: [
             { name: '唐三彩骆驼', type: '陶瓷', museum: '故宫博物院', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Tang%20dynasty%20tri-colored%20pottery%20camel&image_size=square' },
-            { name: '唐代壁画', type: '绘画', museum: '敦煌研究院', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Dunhuang%20mural%20painting%20Tang%20dynasty&image_size=square' }
+            { name: '敦煌壁画', type: '绘画', museum: '敦煌研究院', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Dunhuang%20mural%20painting%20Tang%20dynasty&image_size=square' }
+          ]
+        },
+        {
+          dynasty: '五代十国',
+          year: '907-960年',
+          description: '政权更迭频繁，但艺术持续发展，绘画成就突出。',
+          relics: [
+            { name: '韩熙载夜宴图', type: '书画', museum: '故宫博物院', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Night%20Banquet%20painting%20gu%20hongzhong&image_size=square' },
+            { name: '越窑青瓷', type: '陶瓷', museum: '上海博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=yue%20kiln%20celadon%20five%20dynasties&image_size=square' }
           ]
         },
         {
@@ -176,8 +186,18 @@ export default {
             { name: '青花瓷瓶', type: '陶瓷', museum: '大英博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=blue%20and%20white%20porcelain%20vase%20ming%20dynasty&image_size=square' },
             { name: '珐琅彩瓷', type: '陶瓷', museum: '大都会博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=enamel%20porcelain%20qing%20dynasty&image_size=square' }
           ]
+        },
+        {
+          dynasty: '近现代',
+          year: '1912-2000年',
+          description: '近现代文物保护与收藏兴起，大量海外流失文物开始回流。',
+          relics: [
+            { name: '敦煌遗书', type: '文献', museum: '敦煌研究院', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=dunhuang%20manuscript%20scroll%20document&image_size=square' },
+            { name: '圆明园兽首', type: '青铜器', museum: '保利艺术博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=bronze%20animal%20head%20yuanmingyuan&image_size=square' }
+          ]
         }
       ]
+      timelineData.value = [...mockData]
     }
 
     const refreshData = async () => {
@@ -185,7 +205,7 @@ export default {
       try {
         const response = await axios.get('http://localhost:8085/api/v1/data/timeline')
         if (response.data && response.data.code === 200 && response.data.data) {
-          timelineData.value = response.data.data
+          timelineData.value = [...response.data.data]
           if (timelineData.value.length > 0 && selectedPeriod.value >= timelineData.value.length) {
             selectedPeriod.value = 0
           }
@@ -209,11 +229,6 @@ export default {
 
     return {
       selectedPeriod,
-      selectedDynasty,
-      showFilterPanel,
-      timeRange,
-      selectedTypes,
-      dynasties,
       timelineData,
       currentPeriod,
       progressWidth,
@@ -256,44 +271,6 @@ export default {
   display: flex;
   gap: 20px;
   margin-bottom: 25px;
-
-  :deep(.el-select) {
-    width: 150px;
-  }
-
-  :deep(.el-button--primary) {
-    background-color: #8B4513 !important;
-    border-color: #8B4513 !important;
-
-    &:hover {
-      background-color: #6B3510 !important;
-      border-color: #6B3510 !important;
-    }
-  }
-}
-
-.filter-panel {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 25px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-
-  .filter-row {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-bottom: 15px;
-
-    label {
-      font-weight: 600;
-      color: #333;
-    }
-
-    &:last-child {
-      margin-bottom: 0;
-    }
-  }
 }
 
 .timeline-container {

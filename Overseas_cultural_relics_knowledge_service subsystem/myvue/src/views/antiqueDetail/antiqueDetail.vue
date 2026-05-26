@@ -4,7 +4,7 @@
     <el-card :body-style="{ padding: '0px' }">
       <div class="block">
         <span class="demonstration"></span>
-        <img :src="form1.img_url" class="image">
+        <img :src="imageUrl" class="image">
       </div>
       <div style="padding: 14px;">
         <span>文物名称：{{form1.object_name}}</span>
@@ -88,9 +88,12 @@ export default {
       form1: {
         name: '古董',
         pic: 'src/assets/timg.jpeg',
+        img_url: 'src/assets/timg.jpeg',
         period: '100-1-1',
         url: 'www.baidu.com'
       },
+      // 后端服务器地址，用于拼接相对路径图片
+      baseUrl: 'http://localhost:8085',
       btnShow: false,
       replyComment: '',
       myName: 'GQS',
@@ -116,6 +119,35 @@ export default {
         uid: '',
         content: ''
       }
+    }
+  },
+  computed: {
+    imageUrl () {
+      // 获取图片URL（处理后端返回的 null/undefined/空字符串）
+      const url = this.form1.img_url || this.form1.pic || ''
+      
+      // 如果是空字符串、null、undefined，直接返回默认图片
+      if (!url || url === 'null' || url === 'undefined') {
+        return '/timg.jpeg'
+      }
+      
+      // 如果是有效的http URL，直接返回
+      if (url.startsWith('http')) {
+        return url
+      }
+      
+      // 如果是后端返回的相对路径（如 /upload/xxx.jpg），拼接后端地址
+      if (url.startsWith('/')) {
+        return this.baseUrl + url
+      }
+      
+      // 如果是本地资源路径（如 src/assets/xxx），返回默认图
+      if (url.includes('assets/') || url.includes('src/')) {
+        return '/timg.jpeg'
+      }
+      
+      // 其他未知情况，返回默认图片
+      return '/timg.jpeg'
     }
   },
   created () {

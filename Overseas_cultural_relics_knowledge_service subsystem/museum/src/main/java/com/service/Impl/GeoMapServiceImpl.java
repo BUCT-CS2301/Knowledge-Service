@@ -22,17 +22,17 @@ public class GeoMapServiceImpl implements GeoMapService {
     @Autowired
     private RelicRepository relicRepository;
 
-    // 预设的博物馆地理坐标
+    // 预设的博物馆真实经纬度坐标 (纬度, 经度)
     private static final Map<String, double[]> COORDINATES = new HashMap<>();
     static {
-        COORDINATES.put("大英博物馆", new double[]{320, 110});
-        COORDINATES.put("大都会博物馆", new double[]{680, 100});
-        COORDINATES.put("卢浮宫", new double[]{300, 100});
-        COORDINATES.put("东京国立博物馆", new double[]{720, 280});
-        COORDINATES.put("维多利亚博物馆", new double[]{750, 330});
-        COORDINATES.put("柏林亚洲艺术博物馆", new double[]{360, 90});
-        COORDINATES.put("波士顿美术馆", new double[]{670, 95});
-        COORDINATES.put("韩国国立中央博物馆", new double[]{690, 260});
+        COORDINATES.put("大英博物馆", new double[]{51.5074, -0.1278});      // 伦敦
+        COORDINATES.put("大都会博物馆", new double[]{40.7794, -73.9632});   // 纽约
+        COORDINATES.put("卢浮宫", new double[]{48.8606, 2.3376});           // 巴黎
+        COORDINATES.put("东京国立博物馆", new double[]{35.7100, 139.7691}); // 东京
+        COORDINATES.put("维多利亚博物馆", new double[]{-37.8136, 144.9631}); // 墨尔本
+        COORDINATES.put("柏林亚洲艺术博物馆", new double[]{52.5200, 13.4050}); // 柏林
+        COORDINATES.put("波士顿美术馆", new double[]{42.3398, -71.0942});    // 波士顿
+        COORDINATES.put("韩国国立中央博物馆", new double[]{37.5396, 127.0164}); // 首尔
     }
 
     @Override
@@ -57,8 +57,8 @@ public class GeoMapServiceImpl implements GeoMapService {
             location.put("name", museumName);
             location.put("city", museum.getLocation() != null ? museum.getLocation().split(",")[0] : "");
             location.put("country", museum.getLocation() != null ? museum.getLocation().split(",")[1] : "");
-            location.put("x", coord[0]);
-            location.put("y", coord[1]);
+            location.put("lat", coord[0]);  // 纬度
+            location.put("lng", coord[1]);  // 经度
             location.put("count", count > 0 ? count : getDefaultCount(museumName));
             
             locations.add(location);
@@ -87,15 +87,16 @@ public class GeoMapServiceImpl implements GeoMapService {
 
     private List<Map<String, Object>> getMockData() {
         List<Map<String, Object>> mockData = new ArrayList<>();
+        // 博物馆数据: 名称, 城市, 国家, 纬度, 经度, 文物数量
         String[][] museums = {
-            {"大英博物馆", "伦敦", "英国", "320", "110", "23000"},
-            {"大都会博物馆", "纽约", "美国", "680", "100", "15000"},
-            {"卢浮宫", "巴黎", "法国", "300", "100", "8000"},
-            {"东京国立博物馆", "东京", "日本", "720", "280", "12000"},
-            {"维多利亚博物馆", "墨尔本", "澳大利亚", "750", "330", "5000"},
-            {"柏林亚洲艺术博物馆", "柏林", "德国", "360", "90", "6000"},
-            {"波士顿美术馆", "波士顿", "美国", "670", "95", "4500"},
-            {"韩国国立中央博物馆", "首尔", "韩国", "690", "260", "3800"}
+            {"大英博物馆", "伦敦", "英国", "51.5074", "-0.1278", "23000"},
+            {"大都会博物馆", "纽约", "美国", "40.7794", "-73.9632", "15000"},
+            {"卢浮宫", "巴黎", "法国", "48.8606", "2.3376", "8000"},
+            {"东京国立博物馆", "东京", "日本", "35.7100", "139.7691", "12000"},
+            {"维多利亚博物馆", "墨尔本", "澳大利亚", "-37.8136", "144.9631", "5000"},
+            {"柏林亚洲艺术博物馆", "柏林", "德国", "52.5200", "13.4050", "6000"},
+            {"波士顿美术馆", "波士顿", "美国", "42.3398", "-71.0942", "4500"},
+            {"韩国国立中央博物馆", "首尔", "韩国", "37.5396", "127.0164", "3800"}
         };
 
         for (String[] m : museums) {
@@ -103,8 +104,8 @@ public class GeoMapServiceImpl implements GeoMapService {
             location.put("name", m[0]);
             location.put("city", m[1]);
             location.put("country", m[2]);
-            location.put("x", Double.parseDouble(m[3]));
-            location.put("y", Double.parseDouble(m[4]));
+            location.put("lat", Double.parseDouble(m[3]));  // 纬度
+            location.put("lng", Double.parseDouble(m[4]));  // 经度
             location.put("count", Integer.parseInt(m[5]));
             mockData.add(location);
         }

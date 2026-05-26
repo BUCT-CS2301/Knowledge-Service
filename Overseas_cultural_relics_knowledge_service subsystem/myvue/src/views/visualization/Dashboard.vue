@@ -58,11 +58,11 @@
           <h3>文物类型分布</h3>
           <div class="pie-chart">
             <svg viewBox="0 0 200 200" class="pie-svg">
-              <circle v-for="(slice, index) in typeDistribution" :key="index"
+              <circle v-for="(slice, index) in pieSlices" :key="index"
                 cx="100" cy="100" r="80"
-                :fill="slice.color"
+                fill="none"
                 :stroke="slice.color"
-                stroke-width="2"
+                stroke-width="32"
                 :stroke-dasharray="slice.dashArray"
                 :stroke-dashoffset="slice.dashOffset"
                 class="pie-slice"

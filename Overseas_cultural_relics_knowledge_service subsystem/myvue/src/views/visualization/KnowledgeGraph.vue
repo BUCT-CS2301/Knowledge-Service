@@ -4,148 +4,144 @@
 
     <div class="page-container">
       <div class="page-header">
-        <h1>知识图谱关系图</h1>
-        <p>采用力导向图展示文物实体及其关联关系</p>
+        <h1>知识图谱</h1>
+        <p>探索文物、博物馆与朝代的关联关系</p>
       </div>
 
       <div class="graph-container">
-        <div class="graph-controls">
-          <div class="control-group">
-            <label>显示标签:</label>
-            <el-switch v-model="showLabels" active-color="#8B4513"></el-switch>
-          </div>
-          <div class="control-group">
-            <label>节点大小:</label>
-            <el-slider v-model="nodeSize" :min="20" :max="60" :step="5"></el-slider>
-          </div>
-          <div class="control-group">
-            <label>力强度:</label>
-            <el-slider v-model="forceStrength" :min="0.1" :max="2" :step="0.1"></el-slider>
-          </div>
-          <button class="refresh-btn" @click="refreshGraph">刷新数据</button>
-          <button class="reset-btn" @click="resetView">重置视图</button>
+        <div v-if="loading" class="loading-overlay">
+          <div class="loading-spinner"></div>
+          <p>加载知识图谱数据...</p>
         </div>
+        
+        <svg 
+          width="100%" 
+          height="600" 
+          class="graph-svg"
+          :style="{ cursor: isDragging ? 'grabbing' : 'grab' }"
+          @mousedown="handleCanvasMouseDown"
+          @mousemove="handleMouseMove"
+          @mouseup="handleMouseUp"
+          @mouseleave="handleMouseUp"
+          @wheel.prevent="handleWheel"
+        >
+          <defs>
+            <!-- 文物渐变 - 深棕色 -->
+            <radialGradient id="relicGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" style="stop-color:#C9A86C"/>
+              <stop offset="100%" style="stop-color:#5D4E37"/>
+            </radialGradient>
+            
+            <!-- 博物馆渐变 - 深蓝色 -->
+            <radialGradient id="museumGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" style="stop-color:#667EEA"/>
+              <stop offset="100%" style="stop-color:#364FC7"/>
+            </radialGradient>
+            
+            <!-- 朝代渐变 - 深绿色 -->
+            <radialGradient id="periodGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" style="stop-color:#51CF66"/>
+              <stop offset="100%" style="stop-color:#2F9E44"/>
+            </radialGradient>
+          </defs>
 
-        <div class="graph-area" ref="graphArea" @wheel.prevent="handleZoom" @mousedown="handleMouseDown">
-          <svg :width="svgWidth" :height="svgHeight" :style="svgTransform">
-            <defs>
-              <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.3"/>
-              </filter>
-              <linearGradient id="relicGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#8B4513"/>
-                <stop offset="100%" style="stop-color:#A0522D"/>
-              </linearGradient>
-              <linearGradient id="museumGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#4facfe"/>
-                <stop offset="100%" style="stop-color:#00f2fe"/>
-              </linearGradient>
-              <linearGradient id="periodGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#43e97b"/>
-                <stop offset="100%" style="stop-color:#38f9d7"/>
-              </linearGradient>
-            </defs>
+          <g :transform="`translate(${offsetX}, ${offsetY}) scale(${scale})`">
+            <!-- Edges -->
+            <line
+              v-for="(link, index) in links"
+              :key="'link-' + index"
+              :x1="getNodePosition(link.source).x"
+              :y1="getNodePosition(link.source).y"
+              :x2="getNodePosition(link.target).x"
+              :y2="getNodePosition(link.target).y"
+              :stroke="getLinkColor(link.relationType)"
+              stroke-width="1.5"
+              stroke-opacity="0.5"
+              stroke-dasharray="4,2"
+            />
 
-            <g>
-              <line
-                v-for="(link, index) in links"
-                :key="'link-' + index"
-                :x1="getNodePosition(link.source).x"
-                :y1="getNodePosition(link.source).y"
-                :x2="getNodePosition(link.target).x"
-                :y2="getNodePosition(link.target).y"
-                :stroke="linkColor"
-                stroke-width="2"
-                class="link-line"
+            <!-- Nodes -->
+            <g 
+              v-for="(node, index) in nodes" 
+              :key="'node-' + index"
+              :transform="`translate(${node.x}, ${node.y})`"
+              :class="{ 'node-selected': selectedNode && selectedNode.id === node.id }"
+            >
+              <circle
+                cx="0"
+                cy="0"
+                r="18"
+                :fill="`url(#${getNodeGradient(node.type)})`"
+                stroke="rgba(255,255,255,0.9)"
+                stroke-width="1.5"
+                shape-rendering="geometricPrecision"
+                class="node-circle"
+                @mousedown.stop="handleNodeMouseDown($event, index)"
+                @click.stop="handleNodeClick(node)"
               />
-            </g>
-
-            <g>
-              <g
-                v-for="(node, index) in graphNodes"
-                :key="'node-' + index"
-                :transform="`translate(${node.x}, ${node.y})`"
-                class="node-group"
-                @click="selectNode(index)"
-                @mouseenter="hoverNode(index, $event)"
-                @mouseleave="unhoverNode"
+              <text
+                x="0"
+                y="4"
+                text-anchor="middle"
+                font-size="12"
+                fill="white"
+                font-weight="bold"
+                pointer-events="none"
+                style="user-select: none; -webkit-user-select: none;"
               >
-                <circle
-                  :r="selectedNode === index ? nodeSize + 5 : nodeSize"
-                  :fill="getNodeFill(node.type)"
-                  :stroke="selectedNode === index ? '#5D3A1A' : 'none'"
-                  stroke-width="3"
-                  filter="url(#shadow)"
-                  class="node-circle"
-                />
-                <text
-                  v-if="showLabels"
-                  :y="nodeSize + 18"
-                  text-anchor="middle"
-                  font-size="12"
-                  fill="#333"
-                  class="node-label"
-                >
-                  {{ truncateLabel(node.label) }}
-                </text>
-              </g>
+                {{ getNodeIcon(node.type) }}
+              </text>
+              <text
+                x="0"
+                y="35"
+                text-anchor="middle"
+                font-size="11"
+                fill="white"
+                font-weight="500"
+                pointer-events="none"
+                style="user-select: none; -webkit-user-select: none;"
+              >
+                {{ node.label }}
+              </text>
             </g>
-          </svg>
+          </g>
+        </svg>
 
-          <div v-if="hoveredNode" class="node-tooltip" :style="tooltipStyle">
-            <div class="tooltip-title">{{ graphNodes[hoveredNode].label }}</div>
-            <div class="tooltip-info">类型: {{ getTypeLabel(graphNodes[hoveredNode].type) }}</div>
-            <div class="tooltip-info">描述: {{ graphNodes[hoveredNode].description }}</div>
-          </div>
-
-          <div class="zoom-controls">
-            <button class="zoom-btn" @click="zoomIn">+</button>
-            <button class="zoom-btn" @click="zoomOut">-</button>
-          </div>
+        <div class="zoom-controls">
+          <button class="zoom-btn" @click="zoomIn" title="放大">+</button>
+          <span class="zoom-level">{{ Math.round(scale * 100) }}%</span>
+          <button class="zoom-btn" @click="zoomOut" title="缩小">-</button>
+          <button class="zoom-btn reset" @click="resetView" title="重置视图">⟲</button>
         </div>
 
-        <div class="node-info-panel" v-if="selectedNode !== null">
-          <div class="panel-header">
-            <h3>{{ graphNodes[selectedNode].label }}</h3>
-            <span class="type-badge" :style="{ background: getTypeColor(graphNodes[selectedNode].type) }">
-              {{ getTypeLabel(graphNodes[selectedNode].type) }}
-            </span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">描述:</span>
-            <span>{{ graphNodes[selectedNode].description }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">相关实体:</span>
-            <div class="related-nodes">
-              <span
-                v-for="(rel, idx) in getRelatedNodes(selectedNode)"
-                :key="idx"
-                class="related-tag"
-                :style="{ background: getTypeColor(graphNodes[rel].type) }"
-                @click="selectNode(rel)"
-              >
-                {{ graphNodes[rel].label }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="legend">
-        <h4>图例说明</h4>
-        <div class="legend-items">
+        <div class="legend">
           <div class="legend-item">
-            <span class="legend-circle" style="background: url(#relicGradient)"></span>
+            <span class="legend-dot" style="background: #8B4513;"></span>
             <span>文物</span>
           </div>
           <div class="legend-item">
-            <span class="legend-circle" style="background: url(#museumGradient)"></span>
+            <span class="legend-dot" style="background: #4facfe;"></span>
             <span>博物馆</span>
           </div>
           <div class="legend-item">
-            <span class="legend-circle" style="background: url(#periodGradient)"></span>
+            <span class="legend-dot" style="background: #43e97b;"></span>
             <span>朝代</span>
+          </div>
+        </div>
+
+        <!-- Node Detail Panel -->
+        <div v-if="selectedNode" class="node-detail" :class="{ 'show': selectedNode }">
+          <button class="close-btn" @click="selectedNode = null">✕</button>
+          <h3>{{ selectedNode.label }}</h3>
+          <div class="detail-type">{{ selectedNode.type }}</div>
+          <div class="detail-info">
+            <p><strong>类型:</strong> {{ selectedNode.type }}</p>
+            <p><strong>关系:</strong></p>
+            <ul>
+              <li v-for="(rel, i) in getNodeRelations(selectedNode.id)" :key="i">
+                {{ rel }}
+              </li>
+            </ul>
           </div>
         </div>
       </div>
@@ -156,10 +152,10 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
-import axios from 'axios'
+import { ref, onMounted } from 'vue'
 import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
+import kgData from '../../assets/knowledge_graph.json'
 
 export default {
   name: 'KnowledgeGraph',
@@ -168,617 +164,498 @@ export default {
     MainFooter
   },
   setup() {
-    const svgWidth = ref(900)
-    const svgHeight = ref(500)
-    const showLabels = ref(true)
-    const nodeSize = ref(30)
-    const forceStrength = ref(0.5)
-    const selectedNode = ref(null)
-    const hoveredNode = ref(null)
-    const tooltipStyle = reactive({ left: '0px', top: '0px', display: 'none' })
-    const graphArea = ref(null)
-    const graphNodes = reactive([])
+    const nodes = ref([])
     const links = ref([])
+    const loading = ref(true)
     const scale = ref(1)
-    const translateX = ref(0)
-    const translateY = ref(0)
+    const offsetX = ref(0)
+    const offsetY = ref(0)
     const isDragging = ref(false)
-    const dragStart = reactive({ x: 0, y: 0 })
-    const isLoading = ref(false)
+    const dragStart = ref({ x: 0, y: 0 })
+    const isNodeDragging = ref(false)
+    const nodeDragStart = ref({ x: 0, y: 0, nodeIndex: -1 })
+    const selectedNode = ref(null)
 
-    const svgTransform = ref('')
-
-    const getNodeFill = (type) => {
-      const fills = {
-        '文物': 'url(#relicGradient)',
-        '博物馆': 'url(#museumGradient)',
-        '朝代': 'url(#periodGradient)'
+    const getNodeGradient = (type) => {
+      const gradients = {
+        '文物': 'relicGrad',
+        '博物馆': 'museumGrad',
+        '朝代': 'periodGrad'
       }
-      return fills[type] || 'url(#relicGradient)'
+      return gradients[type] || 'relicGrad'
     }
 
-    const getTypeColor = (type) => {
+    const getNodeIcon = (type) => {
+      const icons = {
+        '文物': '🏺',
+        '博物馆': '🏛',
+        '朝代': '📜'
+      }
+      return icons[type] || '●'
+    }
+
+    const getLinkColor = (relationType) => {
       const colors = {
-        '文物': '#8B4513',
-        '博物馆': '#4facfe',
-        '朝代': '#43e97b'
+        '收藏于': '#8B6914',
+        '属于': '#37B24D',
+        '相关': '#4C63D2'
       }
-      return colors[type] || '#8B4513'
-    }
-
-    const getTypeLabel = (type) => {
-      const labels = {
-        '文物': '文物',
-        '博物馆': '博物馆',
-        '朝代': '朝代'
-      }
-      return labels[type] || type
-    }
-
-    const linkColor = '#ccc'
-
-    const truncateLabel = (label) => {
-      return label.length > 6 ? label.substring(0, 6) + '...' : label
+      return colors[relationType] || '#999'
     }
 
     const getNodePosition = (nodeId) => {
-      const index = graphNodes.findIndex(n => n.id === nodeId)
-      return index !== -1 ? graphNodes[index] : { x: 0, y: 0 }
+      const node = nodes.value.find(n => n.id === nodeId)
+      return node ? { x: node.x, y: node.y } : { x: 0, y: 0 }
     }
 
-    const selectNode = (index) => {
-      selectedNode.value = selectedNode.value === index ? null : index
-    }
-
-    const hoverNode = (index, event) => {
-      hoveredNode.value = index
-      const rect = graphArea.value.getBoundingClientRect()
-      tooltipStyle.left = (event.clientX - rect.left + 15) + 'px'
-      tooltipStyle.top = (event.clientY - rect.top - 30) + 'px'
-      tooltipStyle.display = 'block'
-    }
-
-    const unhoverNode = () => {
-      hoveredNode.value = null
-      tooltipStyle.display = 'none'
-    }
-
-    const getRelatedNodes = (nodeIndex) => {
-      const related = new Set()
-      const nodeId = graphNodes[nodeIndex].id
+    const getNodeRelations = (nodeId) => {
+      const relations = []
       links.value.forEach(link => {
         if (link.source === nodeId) {
-          const idx = graphNodes.findIndex(n => n.id === link.target)
-          if (idx !== -1) related.add(idx)
-        }
-        if (link.target === nodeId) {
-          const idx = graphNodes.findIndex(n => n.id === link.source)
-          if (idx !== -1) related.add(idx)
+          const targetNode = nodes.value.find(n => n.id === link.target)
+          if (targetNode) {
+            relations.push(link.relationType + ' ' + targetNode.label)
+          }
+        } else if (link.target === nodeId) {
+          const sourceNode = nodes.value.find(n => n.id === link.source)
+          if (sourceNode) {
+            relations.push(link.relationType + ' ' + sourceNode.label)
+          }
         }
       })
-      return Array.from(related)
+      return relations.length > 0 ? relations : ['暂无关系信息']
     }
 
-    const refreshGraph = async () => {
-      isLoading.value = true
-      try {
-        const response = await axios.get('http://localhost:8085/api/v1/data/knowledge-graph', {
-          params: { limit: 20 }
-        })
-        if (response.data && response.data.data) {
-          const data = response.data.data
-          graphNodes.splice(0, graphNodes.length)
-          links.value = data.links || []
-
-          data.nodes.forEach((node, index) => {
-            graphNodes.push({
-              ...node,
-              x: svgWidth.value / 2 + (Math.random() - 0.5) * 400,
-              y: svgHeight.value / 2 + (Math.random() - 0.5) * 300,
-              vx: 0,
-              vy: 0
-            })
-          })
-
-          selectedNode.value = null
-          startSimulation()
-        }
-      } catch (error) {
-        console.error('Failed to fetch graph data:', error)
-        loadMockData()
-      }
-      isLoading.value = false
-    }
-
-    const loadMockData = () => {
-      const mockNodes = [
-        { id: 'relic_1', label: '青铜鼎', type: '文物', description: '商周时期青铜礼器，造型精美' },
-        { id: 'relic_2', label: '青花瓷瓶', type: '文物', description: '明代青花瓷器，纹饰精美' },
-        { id: 'relic_3', label: '玉璧', type: '文物', description: '汉代玉礼器，象征权力' },
-        { id: 'relic_4', label: '唐三彩', type: '文物', description: '唐代彩陶艺术品' },
-        { id: 'museum_1', label: '大英博物馆', type: '博物馆', description: '英国伦敦著名博物馆' },
-        { id: 'museum_2', label: '大都会博物馆', type: '博物馆', description: '美国纽约著名博物馆' },
-        { id: 'museum_3', label: '卢浮宫', type: '博物馆', description: '法国巴黎著名博物馆' },
-        { id: 'period_1', label: '商周', type: '朝代', description: '中国古代青铜时代' },
-        { id: 'period_2', label: '唐代', type: '朝代', description: '中国古代鼎盛时期' },
-        { id: 'period_3', label: '明代', type: '朝代', description: '中国古代瓷器发展高峰' }
-      ]
-
-      const mockLinks = [
-        { source: 'relic_1', target: 'museum_1', relationType: '收藏于' },
-        { source: 'relic_1', target: 'period_1', relationType: '属于' },
-        { source: 'relic_2', target: 'museum_2', relationType: '收藏于' },
-        { source: 'relic_2', target: 'period_3', relationType: '属于' },
-        { source: 'relic_3', target: 'museum_3', relationType: '收藏于' },
-        { source: 'relic_3', target: 'period_1', relationType: '属于' },
-        { source: 'relic_4', target: 'museum_1', relationType: '收藏于' },
-        { source: 'relic_4', target: 'period_2', relationType: '属于' },
-        { source: 'relic_1', target: 'relic_2', relationType: '相关' },
-        { source: 'relic_2', target: 'relic_4', relationType: '相关' }
-      ]
-
-      graphNodes.splice(0, graphNodes.length)
-      mockNodes.forEach((node, index) => {
-        graphNodes.push({
-          ...node,
-          x: svgWidth.value / 2 + (Math.random() - 0.5) * 400,
-          y: svgHeight.value / 2 + (Math.random() - 0.5) * 300,
-          vx: 0,
-          vy: 0
-        })
-      })
-      links.value = mockLinks
-      startSimulation()
-    }
-
-    const startSimulation = () => {
-      const centerX = svgWidth.value / 2
-      const centerY = svgHeight.value / 2
-      const damping = 0.85
-
-      const simulate = () => {
-        graphNodes.forEach(node => {
-          let fx = 0
-          let fy = 0
-
-          graphNodes.forEach(other => {
-            if (node.id !== other.id) {
-              const dx = other.x - node.x
-              const dy = other.y - node.y
-              const distance = Math.sqrt(dx * dx + dy * dy) || 1
-              const force = (distance - 300) / distance * 0.01 * forceStrength.value
-              fx += dx * force
-              fy += dy * force
-            }
-          })
-
-          links.value.forEach(link => {
-            if (link.source === node.id || link.target === node.id) {
-              const targetId = link.source === node.id ? link.target : link.source
-              const target = graphNodes.find(n => n.id === targetId)
-              if (target) {
-                const dx = target.x - node.x
-                const dy = target.y - node.y
-                const distance = Math.sqrt(dx * dx + dy * dy) || 1
-                const springLength = 150
-                const springForce = (distance - springLength) / distance * 0.15 * forceStrength.value
-                if (link.source === node.id) {
-                  fx += dx * springForce
-                  fy += dy * springForce
-                } else {
-                  fx -= dx * springForce
-                  fy -= dy * springForce
-                }
-              }
-            }
-          })
-
-          const centerForce = 0.0005
-          fx += (centerX - node.x) * centerForce
-          fy += (centerY - node.y) * centerForce
-
-          node.vx = (node.vx + fx) * damping
-          node.vy = (node.vy + fy) * damping
-
-          node.x += node.vx
-          node.y += node.vy
-
-          node.x = Math.max(nodeSize.value, Math.min(svgWidth.value - nodeSize.value, node.x))
-          node.y = Math.max(nodeSize.value, Math.min(svgHeight.value - nodeSize.value, node.y))
-        })
-      }
-
-      let count = 0
-      const runSimulation = () => {
-        simulate()
-        count++
-        if (count < 100) {
-          requestAnimationFrame(runSimulation)
-        }
-      }
-      runSimulation()
-    }
-
-    const resetView = () => {
-      scale.value = 1
-      translateX.value = 0
-      translateY.value = 0
-      updateSvgTransform()
-      selectedNode.value = null
-      hoveredNode.value = null
-    }
-
-    const zoomIn = () => {
-      scale.value = Math.min(scale.value * 1.2, 3)
-      updateSvgTransform()
-    }
-
-    const zoomOut = () => {
-      scale.value = Math.max(scale.value / 1.2, 0.5)
-      updateSvgTransform()
-    }
-
-    const handleZoom = (event) => {
-      const delta = event.deltaY > 0 ? -0.1 : 0.1
-      scale.value = Math.max(0.5, Math.min(3, scale.value + delta))
-      updateSvgTransform()
-    }
-
-    const handleMouseDown = (event) => {
-      if (event.target.tagName !== 'circle' && event.target.tagName !== 'text') {
-        isDragging.value = true
-        dragStart.x = event.clientX - translateX.value
-        dragStart.y = event.clientY - translateY.value
-        document.addEventListener('mousemove', handleMouseMove)
-        document.addEventListener('mouseup', handleMouseUp)
+    const handleCanvasMouseDown = (e) => {
+      if (e.target.classList.contains('node-circle')) return
+      isDragging.value = true
+      dragStart.value = {
+        x: e.clientX - offsetX.value,
+        y: e.clientY - offsetY.value
       }
     }
 
-    const handleMouseMove = (event) => {
-      if (isDragging.value) {
-        translateX.value = event.clientX - dragStart.x
-        translateY.value = event.clientY - dragStart.y
-        updateSvgTransform()
+    const handleMouseMove = (e) => {
+      if (isNodeDragging.value) {
+        const svg = document.querySelector('.graph-svg')
+        const svgRect = svg.getBoundingClientRect()
+        
+        // 鼠标在SVG坐标系中的位置
+        const currentX = (e.clientX - svgRect.left) / scale.value - offsetX.value / scale.value
+        const currentY = (e.clientY - svgRect.top) / scale.value - offsetY.value / scale.value
+        
+        const index = nodeDragStart.value.nodeIndex
+        
+        // 节点位置 = 初始节点位置 + (当前鼠标 - 初始鼠标)
+        nodes.value[index].x = nodeDragStart.value.nodeX + (currentX - nodeDragStart.value.mouseX)
+        nodes.value[index].y = nodeDragStart.value.nodeY + (currentY - nodeDragStart.value.mouseY)
+      } else if (isDragging.value) {
+        offsetX.value = e.clientX - dragStart.value.x
+        offsetY.value = e.clientY - dragStart.value.y
       }
     }
 
     const handleMouseUp = () => {
       isDragging.value = false
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
+      isNodeDragging.value = false
+      nodeDragStart.value.nodeIndex = -1
     }
 
-    const updateSvgTransform = () => {
-      svgTransform.value = `translate(${translateX.value}, ${translateY.value}) scale(${scale.value})`
+    const handleNodeMouseDown = (e, index) => {
+      e.stopPropagation()
+      isNodeDragging.value = true
+      
+      const svg = document.querySelector('.graph-svg')
+      const svgRect = svg.getBoundingClientRect()
+      
+      // 鼠标在SVG坐标系中的位置
+      const mouseX = (e.clientX - svgRect.left) / scale.value - offsetX.value / scale.value
+      const mouseY = (e.clientY - svgRect.top) / scale.value - offsetY.value / scale.value
+      
+      nodeDragStart.value = {
+        mouseX: mouseX,
+        mouseY: mouseY,
+        nodeX: nodes.value[index].x,
+        nodeY: nodes.value[index].y,
+        nodeIndex: index
+      }
+    }
+
+    const handleNodeClick = (node) => {
+      selectedNode.value = selectedNode.value && selectedNode.value.id === node.id ? null : node
+    }
+
+    const handleWheel = (e) => {
+      const delta = e.deltaY > 0 ? -0.1 : 0.1
+      const newScale = Math.max(0.5, Math.min(3, scale.value + delta))
+      scale.value = newScale
+    }
+
+    const zoomIn = () => {
+      scale.value = Math.min(3, scale.value + 0.2)
+    }
+
+    const zoomOut = () => {
+      scale.value = Math.max(0.5, scale.value - 0.2)
+    }
+
+    const resetView = () => {
+      scale.value = 1
+      offsetX.value = 0
+      offsetY.value = 0
+      selectedNode.value = null
+    }
+
+    // 从后端API获取数据
+    const fetchFromAPI = async () => {
+      try {
+        console.log('尝试从后端API获取知识图谱数据...')
+        const response = await fetch('http://localhost:8085/api/v1/data/knowledge-graph?limit=30')
+        
+        if (!response.ok) {
+          throw new Error(`API响应错误: ${response.status}`)
+        }
+        
+        const result = await response.json()
+        
+        if (result && result.data && result.data.nodes && result.data.nodes.length > 0) {
+          console.log('从后端API获取到数据:', result.data.nodes.length, '个节点')
+          
+          // 转换后端数据格式
+          const apiNodes = result.data.nodes.map(node => ({
+            id: node.id,
+            type: node.type,
+            label: node.label,
+            x: node.x || Math.random() * 600 + 100,
+            y: node.y || Math.random() * 400 + 100
+          }))
+          
+          const apiLinks = result.data.links.map(link => ({
+            source: link.source,
+            target: link.target,
+            relationType: link.relationType
+          }))
+          
+          return { nodes: apiNodes, links: apiLinks }
+        }
+        
+        throw new Error('后端返回数据为空')
+      } catch (error) {
+        console.log('后端API不可用，使用本地Mock数据:', error.message)
+        return null
+      }
+    }
+
+    // 初始化图谱数据
+    const initGraphData = async () => {
+      console.log('Initializing knowledge graph data...')
+      
+      // 1. 先尝试从后端API获取数据
+      const apiData = await fetchFromAPI()
+      
+      if (apiData) {
+        nodes.value = apiData.nodes
+        links.value = apiData.links
+      } else {
+        // 2. 后端不可用时，使用本地静态JSON
+        console.log('使用本地Mock数据')
+        nodes.value = kgData.nodes
+        links.value = kgData.edges
+      }
+      
+      loading.value = false
+      console.log('Loaded', nodes.value.length, 'nodes and', links.value.length, 'edges')
     }
 
     onMounted(() => {
-      const handleResize = () => {
-        if (graphArea.value) {
-          svgWidth.value = Math.min(graphArea.value.clientWidth - 30, 1200)
-          svgHeight.value = 600
-        }
-      }
-      handleResize()
-      window.addEventListener('resize', handleResize)
-
-      refreshGraph()
-
-      onUnmounted(() => {
-        window.removeEventListener('resize', handleResize)
-        document.removeEventListener('mousemove', handleMouseMove)
-        document.removeEventListener('mouseup', handleMouseUp)
-      })
+      initGraphData()
     })
 
     return {
-      svgWidth,
-      svgHeight,
-      showLabels,
-      nodeSize,
-      forceStrength,
-      selectedNode,
-      hoveredNode,
-      tooltipStyle,
-      graphNodes,
+      nodes,
       links,
-      graphArea,
-      svgTransform,
-      isLoading,
-      selectNode,
-      hoverNode,
-      unhoverNode,
-      getRelatedNodes,
-      refreshGraph,
-      resetView,
+      loading,
+      scale,
+      offsetX,
+      offsetY,
+      isDragging,
+      selectedNode,
+      getNodeGradient,
+      getNodeIcon,
+      getLinkColor,
+      getNodePosition,
+      getNodeRelations,
+      handleCanvasMouseDown,
+      handleMouseMove,
+      handleMouseUp,
+      handleNodeMouseDown,
+      handleNodeClick,
+      handleWheel,
       zoomIn,
       zoomOut,
-      getNodeFill,
-      getTypeColor,
-      getTypeLabel,
-      truncateLabel,
-      linkColor
+      resetView
     }
   }
 }
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
 .knowledge-graph-page {
   min-height: 100vh;
-  background: #f8f8f8;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
 }
 
 .page-container {
-  padding: 30px 5%;
+  flex: 1;
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .page-header {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 24px;
+}
 
-  h1 {
-    font-size: 28px;
-    color: #8B4513;
-    margin-bottom: 8px;
-  }
+.page-header h1 {
+  color: #8B4513;
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  margin-bottom: 8px;
+}
 
-  p {
-    font-size: 14px;
-    color: #666;
-  }
+.page-header p {
+  color: #666;
+  font-size: 14px;
+  letter-spacing: 1px;
 }
 
 .graph-container {
-  background: white;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
   border-radius: 16px;
-  padding: 25px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 24px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.graph-controls {
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(26, 26, 46, 0.95);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 30px;
-  margin-bottom: 20px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #eee;
-  flex-wrap: wrap;
-
-  .control-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-
-    label {
-      font-size: 14px;
-      color: #666;
-    }
-
-    :deep(.el-slider) {
-      width: 120px;
-    }
-  }
-
-  .refresh-btn, .reset-btn {
-    margin-left: auto;
-    padding: 8px 20px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.3s;
-  }
-
-  .refresh-btn {
-    background: #4facfe;
-    color: white;
-
-    &:hover {
-      background: #3fa5f0;
-    }
-  }
-
-  .reset-btn {
-    background: #8B4513;
-    color: white;
-    margin-left: 10px;
-
-    &:hover {
-      background: #6B3510;
-    }
-  }
+  justify-content: center;
+  z-index: 100;
+  border-radius: 16px;
 }
 
-.graph-area {
-  position: relative;
-  background: #fafafa;
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 2px solid rgba(232, 213, 183, 0.2);
+  border-top-color: #E8D5B7;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-overlay p {
+  margin-top: 16px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+.graph-svg {
+  display: block;
+  margin: 0 auto;
   border-radius: 12px;
-  overflow: hidden;
-  cursor: grab;
-  min-height: 600px;
-
-  &:active {
-    cursor: grabbing;
-  }
-
-  svg {
-    display: block;
-    margin: 0 auto;
-    transform-origin: center center;
-  }
-}
-
-.node-group {
-  cursor: pointer;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);
 }
 
 .node-circle {
-  transition: all 0.3s;
-
-  &:hover {
-    filter: url(#shadow) brightness(1.1);
-  }
+  cursor: grab;
+  transition: transform 0.1s ease-out;
 }
 
-.node-label {
-  pointer-events: none;
-  font-weight: 500;
+.node-circle:hover {
+  transform: scale(1.15);
 }
 
-.node-tooltip {
-  position: absolute;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 12px 16px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-  z-index: 100;
-  pointer-events: none;
-  max-width: 250px;
-
-  .tooltip-title {
-    font-weight: 600;
-    color: #8B4513;
-    margin-bottom: 8px;
-    font-size: 14px;
-  }
-
-  .tooltip-info {
-    font-size: 13px;
-    color: #666;
-    margin-bottom: 4px;
-  }
-}
-
-.node-info-panel {
-  margin-top: 20px;
-  padding: 20px;
-  background: #fff8f0;
-  border-radius: 12px;
-  border-left: 4px solid #8B4513;
-
-  .panel-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 15px;
-
-    h3 {
-      color: #8B4513;
-      margin-bottom: 0;
-      font-size: 18px;
-    }
-
-    .type-badge {
-      padding: 4px 12px;
-      border-radius: 20px;
-      color: white;
-      font-size: 12px;
-    }
-  }
-
-  .info-row {
-    display: flex;
-    margin-bottom: 12px;
-    align-items: flex-start;
-
-    .info-label {
-      font-weight: 600;
-      color: #333;
-      min-width: 70px;
-    }
-
-    span:last-child {
-      color: #666;
-      flex: 1;
-    }
-  }
-
-  .related-nodes {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-
-    .related-tag {
-      padding: 4px 12px;
-      color: white !important;
-      border-radius: 20px;
-      font-size: 13px;
-      cursor: pointer;
-      transition: all 0.3s;
-
-      &:hover {
-        opacity: 0.8;
-        transform: translateY(-2px);
-      }
-    }
-  }
+.node-selected .node-circle {
+  stroke: #E8D5B7 !important;
+  stroke-width: 2.5;
 }
 
 .zoom-controls {
   position: absolute;
-  top: 15px;
-  right: 15px;
+  top: 24px;
+  right: 24px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
+  z-index: 10;
+}
 
-  .zoom-btn {
-    width: 36px;
-    height: 36px;
-    border: none;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.9);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    font-size: 18px;
-    font-weight: 600;
-    cursor: pointer;
-    color: #333;
-    transition: all 0.3s;
+.zoom-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(232, 213, 183, 0.3);
+  border-radius: 8px;
+  background: rgba(232, 213, 183, 0.1);
+  color: #E8D5B7;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
 
-    &:hover {
-      background: #8B4513;
-      color: white;
-    }
-  }
+.zoom-btn:hover {
+  background: rgba(232, 213, 183, 0.2);
+  border-color: rgba(232, 213, 183, 0.5);
+  transform: scale(1.05);
+}
+
+.zoom-btn:active {
+  transform: scale(0.95);
+}
+
+.zoom-btn.reset {
+  font-size: 14px;
+}
+
+.zoom-level {
+  text-align: center;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
 }
 
 .legend {
-  margin-top: 25px;
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-top: 20px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #666;
+  letter-spacing: 0.5px;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.node-detail {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  background: rgba(26, 26, 46, 0.95);
+  backdrop-filter: blur(12px);
   padding: 20px;
-  background: white;
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  max-width: 260px;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 50;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
 
-  h4 {
-    margin-bottom: 15px;
-    color: #333;
-    font-size: 15px;
-  }
+.node-detail.show {
+  opacity: 1;
+  transform: translateY(0);
+}
 
-  .legend-items {
-    display: flex;
-    gap: 30px;
-    flex-wrap: wrap;
+.node-detail h3 {
+  margin: 0 0 8px 0;
+  color: #E8D5B7;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 1px;
+}
 
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+.node-detail .detail-type {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
 
-      .legend-circle {
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
+.node-detail .detail-info p {
+  margin: 10px 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  line-height: 1.5;
+}
 
-      span:last-child {
-        font-size: 13px;
-        color: #666;
-      }
-    }
-  }
+.node-detail .detail-info strong {
+  color: rgba(232, 213, 183, 0.9);
+  font-weight: 500;
+}
+
+.node-detail .detail-info ul {
+  margin: 8px 0 0 16px;
+  padding: 0;
+}
+
+.node-detail .detail-info li {
+  margin: 6px 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.4);
+  transition: color 0.2s;
+  padding: 4px;
+}
+
+.close-btn:hover {
+  color: rgba(255, 255, 255, 0.8);
 }
 </style>

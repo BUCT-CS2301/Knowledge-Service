@@ -1,0 +1,164 @@
+@prefix ex: <http://example.org/ontology/> .
+@prefix museum: <http://example.org/museum/> .
+@prefix period: <http://example.org/period/> .
+@prefix relic: <http://example.org/relic/> .
+@prefix schema1: <http://schema.org/> .
+
+relic:r-001 ex:belongsTo period:商代 ;
+    ex:collectedBy museum:m-001 ;
+    ex:dimensions "高62cm，口径47cm" ;
+    ex:material "青铜" ;
+    ex:period "商代" ;
+    ex:type "青铜器" ;
+    schema1:description "商代晚期青铜祭祀用鼎，造型庄重，纹饰精美，代表了商代青铜文明的最高成就。" ;
+    schema1:image <https://upload.wikimedia.org/wikipedia/commons/ding.jpg> ;
+    schema1:name "商代青铜鼎" ;
+    schema1:url <https://www.britishmuseum.org/collection/object/bronze-vessel> .
+
+relic:r-002 ex:belongsTo period:唐代 ;
+    ex:collectedBy museum:m-002 ;
+    ex:dimensions "高78cm，长90cm" ;
+    ex:material "陶器" ;
+    ex:period "唐代" ;
+    ex:type "陶器" ;
+    schema1:description "唐代巩义窑烧制的三彩骆驼，姿态生动，色彩艳丽，是丝绸之路东西方文化交流的见证。" ;
+    schema1:image <https://upload.wikimedia.org/wikipedia/commons/camel.jpg> ;
+    schema1:name "唐代三彩骆驼" ;
+    schema1:url <https://www.metmuseum.org/collection/sancai-camel> .
+
+relic:r-003 ex:belongsTo period:宋代 ;
+    ex:collectedBy museum:m-003 ;
+    ex:dimensions "高8.5cm，口径16cm" ;
+    ex:material "瓷器" ;
+    ex:period "宋代" ;
+    ex:type "瓷器" ;
+    schema1:description "南宋龙泉窑青瓷碗，釉色青翠欲滴，胎质细腻，是龙泉窑精品。" ;
+    schema1:image <https://upload.wikimedia.org/wikipedia/commons/celadon.jpg> ;
+    schema1:name "宋代青瓷碗" ;
+    schema1:url <https://www.louvre.fr/collection/celadon-bowl> .
+
+relic:r-004 ex:belongsTo period:明代 ;
+    ex:collectedBy museum:m-004 ;
+    ex:dimensions "高38cm" ;
+    ex:material "瓷器" ;
+    ex:period "明代" ;
+    ex:type "瓷器" ;
+    schema1:description "明代永乐年间青花瓷瓶，绘制缠枝莲纹，青花发色浓艳，是明代青花瓷器的代表作。" ;
+    schema1:image <https://upload.wikimedia.org/wikipedia/commons/blue_white.jpg> ;
+    schema1:name "明代青花瓷瓶" ;
+    schema1:url <https://www.palace-museum.org/collection/blue-white-vase> .
+
+relic:r-005 ex:belongsTo period:清代 ;
+    ex:collectedBy museum:m-005 ;
+    ex:dimensions "高6cm，口径14cm" ;
+    ex:material "瓷器" ;
+    ex:period "清代" ;
+    ex:type "瓷器" ;
+    schema1:description "清代乾隆年间珐琅彩碗，彩绘花鸟纹饰，色彩丰富，制作精湛。" ;
+    schema1:image <https://upload.wikimedia.org/wikipedia/commons/enamel.jpg> ;
+    schema1:name "清代珐琅彩碗" ;
+    schema1:url <https://www.hermitage.org/collection/enamel-bowl> .
+
+relic:r-006 ex:belongsTo period:战国 ;
+    ex:collectedBy museum:m-006 ;
+    ex:dimensions "直径25cm，厚0.8cm" ;
+    ex:material "玉" ;
+    ex:period "战国" ;
+    ex:type "玉器" ;
+    schema1:description "战国时期玉璧，玉质温润，雕工精细，表面饰有云纹和谷纹。" ;
+    schema1:image <https://upload.wikimedia.org/wikipedia/commons/jade_bi.jpg> ;
+    schema1:name "战国玉璧" ;
+    schema1:url <https://www.freer-sackler.org/collection/jade-bi> .
+
+relic:r-007 ex:belongsTo period:汉代 ;
+    ex:collectedBy museum:m-001 ;
+    ex:dimensions "高35cm" ;
+    ex:material "陶器" ;
+    ex:period "汉代" ;
+    ex:type "陶器" ;
+    schema1:description "东汉时期彩绘陶俑，造型生动，表现了汉代贵族生活的场景。" ;
+    schema1:image <https://upload.wikimedia.org/wikipedia/commons/han_figurine.jpg> ;
+    schema1:name "东汉陶俑" ;
+    schema1:url <https://www.britishmuseum.org/collection/han-tomb-figures> .
+
+relic:r-008 ex:belongsTo period:元代 ;
+    ex:collectedBy museum:m-002 ;
+    ex:dimensions "高42cm" ;
+    ex:material "瓷器" ;
+    ex:period "元代" ;
+    ex:type "瓷器" ;
+    schema1:description "元代青花人物故事梅瓶，绘制人物故事图案，青花发色浓艳。" ;
+    schema1:image <https://upload.wikimedia.org/wikipedia/commons/meiping.jpg> ;
+    schema1:name "元青花梅瓶" ;
+    schema1:url <https://www.metmuseum.org/collection/yuan-meiping> .
+
+relic:r-009 ex:belongsTo period:西周 ;
+    ex:collectedBy museum:m-003 ;
+    ex:dimensions "高31cm，口径26cm" ;
+    ex:material "青铜" ;
+    ex:period "西周" ;
+    ex:type "青铜器" ;
+    schema1:description "西周早期青铜簋，器身饰有兽面纹，是研究西周礼制的重要实物资料。" ;
+    schema1:image <https://upload.wikimedia.org/wikipedia/commons/bronze_gui.jpg> ;
+    schema1:name "西周青铜簋" ;
+    schema1:url <https://www.louvre.fr/collection/bronze-gui> .
+
+relic:r-010 ex:belongsTo period:唐代 ;
+    ex:collectedBy museum:m-004 ;
+    ex:dimensions "长35cm，宽12cm" ;
+    ex:material "银" ;
+    ex:period "唐代" ;
+    ex:type "金银器" ;
+    schema1:description "唐代宫廷御用银茶碾，造型精美，工艺精湛，反映了唐代茶文化的繁荣。" ;
+    schema1:image <https://upload.wikimedia.org/wikipedia/commons/silver_tea.jpg> ;
+    schema1:name "唐代银茶碾" ;
+    schema1:url <https://www.palace-museum.org/collection/silver-tea> .
+
+museum:m-005 schema1:location "St. Petersburg, Russia" ;
+    schema1:name "State Hermitage Museum",
+        "艾尔米塔什博物馆"@zh ;
+    schema1:url <https://www.hermitagemuseum.org> .
+
+museum:m-006 schema1:location "Washington D.C., USA" ;
+    schema1:name "Freer Gallery of Art",
+        "弗利尔美术馆"@zh ;
+    schema1:url <https://www.freersackler.si.edu> .
+
+period:元代 schema1:name "元代"@zh .
+
+period:商代 schema1:name "商代"@zh .
+
+period:宋代 schema1:name "宋代"@zh .
+
+period:战国 schema1:name "战国"@zh .
+
+period:明代 schema1:name "明代"@zh .
+
+period:汉代 schema1:name "汉代"@zh .
+
+period:清代 schema1:name "清代"@zh .
+
+period:西周 schema1:name "西周"@zh .
+
+museum:m-001 schema1:location "London, United Kingdom" ;
+    schema1:name "The British Museum",
+        "大英博物馆"@zh ;
+    schema1:url <https://www.britishmuseum.org> .
+
+museum:m-002 schema1:location "New York, USA" ;
+    schema1:name "The Metropolitan Museum of Art",
+        "大都会艺术博物馆"@zh ;
+    schema1:url <https://www.metmuseum.org> .
+
+museum:m-003 schema1:location "Paris, France" ;
+    schema1:name "Musée du Louvre",
+        "卢浮宫"@zh ;
+    schema1:url <https://www.louvre.fr> .
+
+museum:m-004 schema1:location "Beijing, China" ;
+    schema1:name "The Palace Museum",
+        "故宫博物院"@zh ;
+    schema1:url <https://www.dpm.org.cn> .
+
+period:唐代 schema1:name "唐代"@zh .
+
