@@ -3,3 +3,8 @@
 *.log
 *.temp
 *.exe
+node_modules/
+.npm-cache/
+dist/
+out/
+.DS_Store

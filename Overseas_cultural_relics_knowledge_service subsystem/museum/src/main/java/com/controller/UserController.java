@@ -4,15 +4,18 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.mapper.UserMapper;
 import com.service.IUserService;
+import com.service.IUserLogService;
 import com.service.exception.PasswordNotMatchException;
 import com.service.exception.UserLimitedLoginException;
 import com.service.exception.UserNotFoundException;
 import com.service.exception.userRepetitionException;
 import com.util.JsonResult;
 import com.entity.User;
+import com.entity.UserLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -22,6 +25,8 @@ public class UserController {
     private IUserService userService;
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private IUserLogService userLogService;
 //    @RequestMapping("login")
 ////    @ResponseBody//表示此方法的响应结果以json格式进行数据的相应给前端
 //    public JsonResult<User> login(@RequestParam("id") int user_id, @RequestParam("password") String user_password){//用户登录
@@ -106,6 +111,23 @@ public class UserController {
             result.setState(200);
             result.setData(user);
             return result;
+    }
+
+    @RequestMapping("/{objectId}/logs")
+    public JsonResult<List<UserLog>> getUserLogs(@PathVariable("objectId") int objectId, 
+                                                 @RequestParam(defaultValue = "1") int page, 
+                                                 @RequestParam(defaultValue = "20") int pageSize){
+        JsonResult<List<UserLog>> result = new JsonResult<List<UserLog>>();
+        try {
+            List<UserLog> logs = userLogService.getUserLogs(objectId, page, pageSize);
+            result.setState(200);
+            result.setData(logs);
+            result.setMessage("获取用户行为记录成功");
+        } catch (Exception e) {
+            result.setState(5000);
+            result.setMessage("获取用户行为记录失败");
+        }
+        return result;
     }
 
 }

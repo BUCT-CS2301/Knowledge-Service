@@ -15,29 +15,6 @@
         <div class="search-container">
           <h1 class="search-title">探索海外文物世界</h1>
           <p class="search-subtitle">发现珍贵的文化遗产，了解千年历史文明</p>
-          <div class="search-box">
-            <input
-              type="text"
-              v-model="searchKeyword"
-              class="search-input"
-              placeholder="搜索文物名称、博物馆、年代..."
-              @keyup.enter="handleSearch"
-            >
-            <button class="search-button" @click="handleSearch">
-              搜索
-            </button>
-          </div>
-          <div class="hot-search">
-            <span class="hot-label">热门搜索：</span>
-            <span
-              v-for="tag in hotTags"
-              :key="tag"
-              class="hot-tag"
-              @click="searchKeyword = tag; handleSearch()"
-            >
-              {{ tag }}
-            </span>
-          </div>
         </div>
       </div>
     </div>
@@ -47,7 +24,12 @@
         <h2 class="section-title">推荐文物信息</h2>
         <div class="relic-grid">
           <div class="relic-card" v-for="relic in recommendedRelics" :key="relic.id">
-            <img :src="relic.image" :alt="relic.name" class="relic-image">
+            <img
+              :src="relic.image"
+              :alt="relic.name"
+              class="relic-image"
+              @error="handleRelicImageError($event, relic)"
+            >
             <div class="relic-info">
               <span class="relic-name">{{ relic.name }}</span>
               <div class="relic-actions">
@@ -73,7 +55,7 @@
       <div class="section-item">
         <h2 class="section-title">热门博物馆</h2>
         <div class="museum-grid">
-          <div class="museum-card" v-for="museum in hotMuseums" :key="museum.id">
+          <div class="museum-card" v-for="museum in hotMuseums" :key="museum.id" @click="viewMuseumDetail(museum)">
             <img :src="museum.image" :alt="museum.name" class="museum-image">
             <div class="museum-info">
               <span class="museum-name">{{ museum.name }}</span>
@@ -86,7 +68,13 @@
       <div class="section-item">
         <h2 class="section-title">新闻资讯</h2>
         <div class="news-list">
-          <div class="news-item" v-for="news in newsList" :key="news.id">
+          <div
+            class="news-item"
+            v-for="news in newsList"
+            :key="news.id"
+            @click="openNews(news)"
+            :class="{ 'news-clickable': news.url }"
+          >
             <div class="news-dot"></div>
             <span class="news-title">{{ news.title }}</span>
             <span class="news-date">{{ news.date }}</span>
@@ -133,6 +121,7 @@
 <script>
 import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
+import axios from 'axios'
 import carouselImg1 from '@/assets/index/1.png'
 import carouselImg2 from '@/assets/index/2.png'
 import carouselImg3 from '@/assets/index/3.png'
@@ -146,8 +135,6 @@ export default {
   },
   data () {
     return {
-      searchKeyword: '',
-      hotTags: ['青铜器', '敦煌壁画', '青花瓷', '大英博物馆', '女史箴图'],
       carouselImages: [
         carouselImg1,
         carouselImg2,
@@ -155,67 +142,155 @@ export default {
         carouselImg4,
         carouselImg5
       ],
-      recommendedRelics: [
-        {
-          id: 1,
-          name: '多乳博局式镜',
-          image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=ancient%20chinese%20bronze%20mirror%20with%20intricate%20patterns&image_size=square_hd',
-          description: '汉代青铜镜，纹饰精美，具有极高的艺术价值和历史价值。',
-          museum: '大英博物馆',
-          period: '汉代'
-        },
-        {
-          id: 2,
-          name: '翡翠西瓜',
-          image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=jade%20jadeite%20watermelon%20sculpture%20Chinese%20art&image_size=square_hd',
-          description: '清代翡翠雕刻艺术品，色泽鲜艳，工艺精湛。',
-          museum: '大都会博物馆',
-          period: '清代'
-        },
-        {
-          id: 3,
-          name: '敦煌壁画',
-          image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Dunhuang%20mural%20painting%20Buddhist%20art%20ancient%20China&image_size=square_hd',
-          description: '唐代敦煌莫高窟壁画，展现了古代丝绸之路的繁荣景象。',
-          museum: '大英博物馆',
-          period: '唐代'
-        },
-        {
-          id: 4,
-          name: '女史箴图',
-          image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=ancient%20Chinese%20scroll%20painting%20women%20figures%20traditional&image_size=square_hd',
-          description: '东晋顾恺之画作摹本，是中国绘画史上的珍品。',
-          museum: '大英博物馆',
-          period: '东晋'
-        }
-      ],
-      hotMuseums: [
-        { id: 1, name: '大英博物馆', location: '英国伦敦', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=British%20Museum%20London%20historic%20building%20architecture&image_size=square_hd' },
-        { id: 2, name: '大都会博物馆', location: '美国纽约', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Metropolitan%20Museum%20New%20York%20classic%20architecture&image_size=square_hd' },
-        { id: 3, name: '卢浮宫', location: '法国巴黎', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Louvre%20Museum%20Paris%20pyramid%20famous%20landmark&image_size=square_hd' },
-        { id: 4, name: '故宫博物院', location: '中国北京', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Forbidden%20City%20Beijing%20Chinese%20imperial%20palace&image_size=square_hd' }
-      ],
+      recommendedRelics: [],
+      hotMuseums: [],
+      isLoading: true,  // 添加加载状态
       newsList: [
-        { id: 1, title: '海外流失文物数字化回归项目启动', date: '2026-04-25' },
-        { id: 2, title: '大英博物馆举办中国古代青铜器特展', date: '2026-04-23' },
-        { id: 3, title: '敦煌壁画数字展在全球巡回展出', date: '2026-04-20' },
-        { id: 4, title: '新发现唐代文物填补历史空白', date: '2026-04-18' },
-        { id: 5, title: '数字博物馆云平台用户突破100万', date: '2026-04-15' }
+        { id: 1, title: '春天在国家博物馆遇见瓷器之美', date: '2023-03-21', url: 'https://mp.weixin.qq.com/s/bTdWuO3fd4j9c2a6XE7mjQ' },
+        { id: 2, title: '国博展讯 | “中国古代饮食文化展”闭展调整', date: '2023-02-14', url: 'https://mp.weixin.qq.com/s/4Z81W7AaH0tN88Fo-PJW2A' },
+        { id: 3, title: '来国博看中国 | “中国古代饮食文化展”上新！', date: '2023-02-20', url: 'https://mp.weixin.qq.com/s/G66UHMUCCORB4gqFBavZAA' },
+        { id: 4, title: '去国博赴一场宋元海丝盛宴', date: '2023-03-20', url: 'https://app.guangmingdaily.cn/as/opened/n/4bdc98799ffb45f19137ca2392261849' },
+        { id: 5, title: '数字博物馆云平台用户突破100万', date: '2026-04-15', url: '' }
       ],
       detailVisible: false,
       selectedRelic: null,
       newComment: ''
     }
   },
+  created () {
+    // 先显示默认数据，让页面立刻能看到内容
+    this.recommendedRelics = this.getDefaultRelics()
+    this.hotMuseums = this.getDefaultMuseums()
+    this.isLoading = false
+
+    // 然后在后台尝试加载API数据，不阻塞页面
+    setTimeout(() => {
+      this.fetchRecommendedRelics()
+      this.fetchHotMuseums()
+    }, 0)
+  },
   methods: {
-    handleSearch () {
-      if (this.searchKeyword.trim()) {
-        this.$router.push({ path: '/keyword', query: { keyword: this.searchKeyword } })
+    // 打开新闻链接
+    openNews (news) {
+      if (news.url) {
+        window.open(news.url, '_blank')
       }
     },
+    // 获取推荐文物列表
+    async fetchRecommendedRelics () {
+      try {
+        const accessToken = localStorage.getItem('accessToken')
+        const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
+        const response = await axios.get('/api/v1/data/relics', {
+          params: {
+            page: 1,
+            pageSize: 8
+          },
+          headers: headers,
+          timeout: 3000  // 添加3秒超时，避免长时间等待
+        })
+        if (response.data.code === 200) {
+          // 将后端数据映射到前端需要的格式
+          this.recommendedRelics = response.data.data.records.map(relic => ({
+            id: relic.objectId,
+            name: relic.title,
+            image: relic.imageUrl || 'https://via.placeholder.com/300x200?text=No+Image',
+            description: relic.description || '暂无描述',
+            museum: relic.museumId || '未知博物馆',
+            period: relic.period || '未知年代'
+          }))
+          console.log('成功从后端获取文物数据:', this.recommendedRelics.length, '件')
+        }
+      } catch (error) {
+        console.error('获取推荐文物失败:', error)
+        // 后端服务不可用时，静默使用默认数据
+        this.recommendedRelics = this.getDefaultRelics()
+      }
+    },
+    // 获取热门博物馆列表
+    async fetchHotMuseums () {
+      try {
+        const accessToken = localStorage.getItem('accessToken')
+        const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
+        const response = await axios.get('/api/v1/data/museums', {
+          params: {
+            page: 1,
+            pageSize: 4
+          },
+          headers: headers,
+          timeout: 3000  // 添加3秒超时，避免长时间等待
+        })
+        if (response.data.code === 200) {
+          // 将后端数据映射到前端需要的格式
+          this.hotMuseums = response.data.data.records.map(museum => ({
+            id: museum.objectId,
+            name: museum.nameCn || museum.name,
+            location: museum.location || '未知地点',
+            image: museum.imageUrl || 'https://via.placeholder.com/300x200?text=No+Image'
+          }))
+          console.log('成功从后端获取博物馆数据:', this.hotMuseums.length, '个')
+        }
+      } catch (error) {
+        console.error('获取热门博物馆失败:', error)
+        // 后端服务不可用时，静默使用默认数据
+        this.hotMuseums = this.getDefaultMuseums()
+      }
+    },
+    // 默认文物数据（使用数据库组爬取的真实数据）
+    getDefaultRelics () {
+      return [
+        {
+          id: 149146,
+          name: 'Raft Cup',
+          image: 'https://openaccess-cdn.clevelandart.org/1977.7/1977.7_web.jpg',
+          backupImage: 'https://picsum.photos/seed/raftcup/400/300',
+          description: 'The figure watching the stars is believed to be the messenger Zhang Qian (died 114 BCE). Legend says he lost his way in the Milky Way, where he met the Weaving Maid who gave him a stone from her loom.',
+          museum: 'The Cleveland Museum of Art',
+          period: '1300s-1400s'
+        },
+        {
+          id: 137198,
+          name: 'Jar with Lion-Head Handles',
+          image: 'https://openaccess-cdn.clevelandart.org/1962.154/1962.154_web.jpg',
+          backupImage: 'https://picsum.photos/seed/jarlion/400/300',
+          description: 'Appreciated for its strong profile, brilliant blue color, and firm delineation of the decorative patterns, this jar is a classic example of Yuan dynasty blue-and-white ware.',
+          museum: 'The Cleveland Museum of Art',
+          period: '1300s'
+        },
+        {
+          id: 130130,
+          name: 'Cup with Daoist Figures',
+          image: 'https://openaccess-cdn.clevelandart.org/1952.510/1952.510_web.jpg',
+          backupImage: 'https://picsum.photos/seed/cupdaoist/400/300',
+          description: 'During the Qing dynasty, Suzhou\'s best products were sent north to the capital. Those that met imperial approval were sometimes graced with Qianlong\'s mark.',
+          museum: 'The Cleveland Museum of Art',
+          period: '1736-95'
+        },
+        {
+          id: 147084,
+          name: 'Virupa',
+          image: 'https://openaccess-cdn.clevelandart.org/1972.96/1972.96_web.jpg',
+          backupImage: 'https://picsum.photos/seed/virupa/400/300',
+          description: 'Virupa is one of the great teachers in the history of tantric Buddhism. His posture references his ability to stop the sun; as an enlightened being, he can control phenomena of nature.',
+          museum: 'The Cleveland Museum of Art',
+          period: 'early 1400s'
+        }
+      ]
+    },
+    // 默认博物馆数据（使用数据库组爬取的真实博物馆信息）
+    getDefaultMuseums () {
+      return [
+        { id: 1, name: 'The Cleveland Museum of Art', location: 'Cleveland, Ohio, United States', image: 'https://picsum.photos/seed/cleveland/300/200' },
+        { id: 2, name: 'The Nelson-Atkins Museum of Art', location: 'Kansas City, Missouri, United States', image: 'https://picsum.photos/seed/nelson/300/200' },
+        { id: 3, name: 'Penn Museum', location: 'Philadelphia, Pennsylvania, United States', image: 'https://picsum.photos/seed/penn/300/200' },
+        { id: 4, name: 'The British Museum', location: 'London, United Kingdom', image: 'https://picsum.photos/seed/british/300/200' }
+      ]
+    },
     viewDetail (relic) {
-      this.selectedRelic = relic
-      this.detailVisible = true
+      this.$router.push({ path: '/relicDetail', query: { id: relic.id, name: relic.name } })
+    },
+    viewMuseumDetail (museum) {
+      this.$router.push({ path: '/museumDetail', query: { id: museum.id, name: museum.name } })
     },
     openComment (relic) {
       this.selectedRelic = relic
@@ -280,6 +355,14 @@ export default {
       localStorage.setItem('comments', JSON.stringify(comments))
       this.newComment = ''
       this.$message.success('评论成功')
+    },
+    handleRelicImageError (event, relic) {
+      // 图片加载失败时使用备用图片
+      if (relic.backupImage) {
+        event.target.src = relic.backupImage
+      } else {
+        event.target.src = 'https://via.placeholder.com/300x200?text=Image+Not+Available'
+      }
     }
   }
 }
@@ -507,6 +590,13 @@ export default {
       border-radius: 12px;
       overflow: hidden;
       box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      cursor: pointer;
+      transition: transform 0.3s, box-shadow 0.3s;
+
+      &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+      }
 
       .museum-image {
         width: 100%;
@@ -572,6 +662,18 @@ export default {
       .news-date {
         font-size: 13px;
         color: #999;
+      }
+
+      &.news-clickable {
+        cursor: pointer;
+
+        &:hover {
+          background-color: #f9f9f9;
+        }
+
+        .news-title {
+          color: #8B4513;
+        }
       }
     }
   }
