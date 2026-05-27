@@ -78,6 +78,7 @@
 import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
 import axios from 'axios'
+import { getApiRoot } from '@/config/api'
 var storage = window.localStorage
 export default {
   name: 'antiqueDetail',
@@ -93,7 +94,7 @@ export default {
         url: 'www.baidu.com'
       },
       // 后端服务器地址，用于拼接相对路径图片
-      baseUrl: 'http://localhost:8085',
+      baseUrl: getApiRoot(),
       btnShow: false,
       replyComment: '',
       myName: 'GQS',

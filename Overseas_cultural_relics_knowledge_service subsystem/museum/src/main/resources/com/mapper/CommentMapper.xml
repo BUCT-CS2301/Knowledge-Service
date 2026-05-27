@@ -7,7 +7,7 @@
     </resultMap>
     <insert id="insert" useGeneratedKeys="true" keyProperty="cid">
         INSERT INTO
-            comment(user_id,relic_id,content,user_comment,created_time,modified_time) VALUES (#{uid}, #{rid}, #{content}, #{user_comment}, #{createdTime},  #{modifiedTime})
+            comment_check(user_id,relic_id,content,user_comment,created_time,modified_time) VALUES (#{uid}, #{rid}, #{content}, #{user_comment}, #{createdTime},  #{modifiedTime})
     </insert>
     <delete id="delete">
         DELETE FROM comment_check WHERE user_comment_id=#{cid}

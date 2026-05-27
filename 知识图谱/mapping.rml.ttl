@@ -1,37 +1,20 @@
 # RML Mapping Rules for Cultural Relics Knowledge Graph
-# 将 MySQL 数据库中的文物数据映射为 RDF 图谱
 
 @prefix rr: <http://www.w3.org/ns/r2rml#> .
 @prefix rml: <http://semweb.mmlab.be/ns/rml#> .
 @prefix ql: <http://semweb.mmlab.be/ns/ql#> .
 @prefix schema: <http://schema.org/> .
-@prefix dbr: <http://dbpedia.org/resource/> .
-@prefix relic: <http://example.org/relic/> .
-@prefix museum: <http://example.org/museum/> .
-@prefix period: <http://example.org/period/> .
 
-# ========================================
-# 文物节点映射 (Relic Node)
-# ========================================
-[ a rml:LogicalSource ;
-  rml:source [ a rml:RelationalModel ;
-               rml:connection "mysql_db" ;
-               rml:tableName "artifact" ;
-               rml:sqlVersion <http://ontotext.com/bindings/sqlVersions#SQL2008> ] ;
-  rml:referenceFormulation ql:SQL ;
-  rml:iterator "SELECT * FROM artifact WHERE is_deleted = 0"
-] a rml:LogicalSource .
-
-# 文物节点 Triples Map
 <#RelicMapping> a rr:TriplesMap ;
-  rml:logicalSource <#RelicSource> ;
-
+  rml:logicalSource [
+    rml:source "SELECT object_id, title, description, period, type, material, image_url, detail_url FROM artifact WHERE is_deleted = 0" ;
+    rml:referenceFormulation ql:SQL
+  ] ;
   rr:subjectMap [
     rr:template "http://example.org/relic/{object_id}" ;
     rr:class schema:CreativeWork ;
     rr:termType rr:IRI
   ] ;
-
   rr:predicateObjectMap [
     rr:predicate schema:name ;
     rr:objectMap [ rml:reference "title" ]
@@ -53,48 +36,21 @@
   ] , [
     rr:predicate schema:url ;
     rr:objectMap [ rml:reference "detail_url" ]
-  ] , [
-    rr:predicate <http://example.org/ontology/accessionNumber> ;
-    rr:objectMap [ rml:reference "accession_number" ]
-  ] , [
-    rr:predicate <http://example.org/ontology/collectedBy> ;
-    rr:objectMap [
-      rr:parentTriplesMap <#MuseumMapping> ;
-      rr:joinCondition [
-        rr:child "museum_id" ;
-        rr:parent "object_id"
-      ]
-    ]
   ] .
 
-# ========================================
-# 博物馆节点映射 (Museum Node)
-# ========================================
-<#MuseumSource> a rml:LogicalSource ;
-  rml:source [ a rml:RelationalModel ;
-               rml:connection "mysql_db" ;
-               rml:tableName "museum" ;
-               rml:sqlVersion <http://ontotext.com/bindings/sqlVersions#SQL2008> ] ;
-  rml:referenceFormulation ql:SQL ;
-  rml:iterator "SELECT * FROM museum"
-] .
-
 <#MuseumMapping> a rr:TriplesMap ;
-  rml:logicalSource <#MuseumSource> ;
-
+  rml:logicalSource [
+    rml:source "SELECT object_id, name, location, website FROM museum" ;
+    rml:referenceFormulation ql:SQL
+  ] ;
   rr:subjectMap [
     rr:template "http://example.org/museum/{object_id}" ;
     rr:class schema:Museum ;
     rr:termType rr:IRI
   ] ;
-
   rr:predicateObjectMap [
     rr:predicate schema:name ;
     rr:objectMap [ rml:reference "name" ]
-  ] , [
-    rr:predicate schema:name ;
-    rr:objectMap [ rml:reference "name_cn" ;
-                   rml:language "zh" ]
   ] , [
     rr:predicate schema:location ;
     rr:objectMap [ rml:reference "location" ]
@@ -103,61 +59,17 @@
     rr:objectMap [ rml:reference "website" ]
   ] .
 
-# ========================================
-# 朝代节点映射 (Period Node)
-# 从文物的 period 字段提取
-# ========================================
-<#PeriodSource> a rml:LogicalSource ;
-  rml:source [ a rml:RelationalModel ;
-               rml:connection "mysql_db" ;
-               rml:tableName "artifact" ;
-               rml:sqlVersion <http://ontotext.com/bindings/sqlVersions#SQL2008> ] ;
-  rml:referenceFormulation ql:SQL ;
-  rml:iterator "SELECT DISTINCT period FROM artifact WHERE period IS NOT NULL AND period != '' AND is_deleted = 0"
-] .
-
 <#PeriodMapping> a rr:TriplesMap ;
-  rml:logicalSource <#PeriodSource> ;
-
+  rml:logicalSource [
+    rml:source "SELECT DISTINCT period FROM artifact WHERE period IS NOT NULL AND period != '' AND is_deleted = 0" ;
+    rml:referenceFormulation ql:SQL
+  ] ;
   rr:subjectMap [
     rr:template "http://example.org/period/{period}" ;
     rr:class schema:Thing ;
     rr:termType rr:IRI
   ] ;
-
   rr:predicateObjectMap [
     rr:predicate schema:name ;
-    rr:objectMap [ rml:reference "period" ;
-                   rml:language "zh" ]
-  ] .
-
-# ========================================
-# 文物-朝代 关系映射
-# ========================================
-<#RelicPeriodSource> a rml:LogicalSource ;
-  rml:source [ a rml:RelationalModel ;
-               rml:connection "mysql_db" ;
-               rml:tableName "artifact" ;
-               rml:sqlVersion <http://ontotext.com/bindings/sqlVersions#SQL2008> ] ;
-  rml:referenceFormulation ql:SQL ;
-  rml:iterator "SELECT object_id, period FROM artifact WHERE period IS NOT NULL AND period != '' AND is_deleted = 0"
-] .
-
-<#RelicPeriodMapping> a rr:TriplesMap ;
-  rml:logicalSource <#RelicPeriodSource> ;
-
-  rr:subjectMap [
-    rr:template "http://example.org/relic/{object_id}" ;
-    rr:termType rr:IRI
-  ] ;
-
-  rr:predicateObjectMap [
-    rr:predicate <http://example.org/ontology/belongsTo> ;
-    rr:objectMap [
-      rr:parentTriplesMap <#PeriodMapping> ;
-      rr:joinCondition [
-        rr:child "period" ;
-        rr:parent "period"
-      ]
-    ]
+    rr:objectMap [ rml:reference "period" ]
   ] .

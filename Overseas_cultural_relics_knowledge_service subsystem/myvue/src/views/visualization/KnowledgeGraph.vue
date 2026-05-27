@@ -155,6 +155,7 @@
 import { ref, onMounted } from 'vue'
 import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
+import { getApiRoot } from '@/config/api'
 import kgData from '../../assets/knowledge_graph.json'
 
 export default {
@@ -310,7 +311,7 @@ export default {
     const fetchFromAPI = async () => {
       try {
         console.log('尝试从后端API获取知识图谱数据...')
-        const response = await fetch('http://localhost:8085/api/v1/data/knowledge-graph?limit=30')
+        const response = await fetch(`${getApiRoot()}/api/v1/data/knowledge-graph?limit=30`)
         
         if (!response.ok) {
           throw new Error(`API响应错误: ${response.status}`)

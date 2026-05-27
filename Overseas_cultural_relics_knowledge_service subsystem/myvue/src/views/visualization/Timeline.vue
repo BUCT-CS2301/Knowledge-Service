@@ -66,6 +66,7 @@
 <script>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import { getApiRoot } from '@/config/api'
 import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
 
@@ -203,7 +204,7 @@ export default {
     const refreshData = async () => {
       isLoading.value = true
       try {
-        const response = await axios.get('http://localhost:8085/api/v1/data/timeline')
+        const response = await axios.get(`${getApiRoot()}/api/v1/data/timeline`)
         if (response.data && response.data.code === 200 && response.data.data) {
           timelineData.value = [...response.data.data]
           if (timelineData.value.length > 0 && selectedPeriod.value >= timelineData.value.length) {
