@@ -22,7 +22,7 @@
         </div>
         <div class="bottom clearfix">
           <el-button type="primary" @click="changeButton" v-if="isStared">
-            已收�?
+            已收藏
             <i class="el-icon-star-on"></i>
           </el-button>
         </div>
@@ -76,7 +76,7 @@ export default {
             this.$message({
               showClose: true,
               type: 'warning',
-              message: '已取消收�?
+              message: '已取消收藏'
             })
           }
         }
@@ -92,7 +92,7 @@ export default {
             this.$message({
               showClose: true,
               type: 'success',
-              message: '已收�?
+              message: '已收藏'
             })
           }
         }
