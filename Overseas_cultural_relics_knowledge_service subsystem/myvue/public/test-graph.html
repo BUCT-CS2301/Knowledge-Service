@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>知识图谱测试</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f5f7fa;
+    }
+    .graph-container {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-top: 20px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .legend-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+  <div class="graph-container">
+    <h1 style="text-align: center; color: #8B4513;">知识图谱关系图</h1>
+    <p style="text-align: center; color: #666;">展示文物实体及其关联关系</p>
+    
+    <svg width="100%" height="600" viewBox="0 0 700 500" style="background: #fafafa; border-radius: 8px;">
+      <defs>
+        <radialGradient id="relicGrad" cx="30%" cy="30%">
+          <stop offset="0%" style="stop-color:#A0522D"/>
+          <stop offset="100%" style="stop-color:#8B4513"/>
+        </radialGradient>
+        <radialGradient id="museumGrad" cx="30%" cy="30%">
+          <stop offset="0%" style="stop-color:#00f2fe"/>
+          <stop offset="100%" style="stop-color:#4facfe"/>
+        </radialGradient>
+        <radialGradient id="periodGrad" cx="30%" cy="30%">
+          <stop offset="0%" style="stop-color:#38f9d7"/>
+          <stop offset="100%" style="stop-color:#43e97b"/>
+        </radialGradient>
+      </defs>
+
+      <!-- 连接线 -->
+      <line x1="150" y1="80" x2="120" y2="200" stroke="#8B4513" stroke-width="2"/>
+      <line x1="350" y1="60" x2="350" y2="220" stroke="#8B4513" stroke-width="2"/>
+      <line x1="550" y1="80" x2="580" y2="200" stroke="#8B4513" stroke-width="2"/>
+      <line x1="150" y1="80" x2="150" y2="350" stroke="#43e97b" stroke-width="2"/>
+      <line x1="350" y1="60" x2="350" y2="380" stroke="#43e97b" stroke-width="2"/>
+      <line x1="550" y1="80" x2="550" y2="350" stroke="#43e97b" stroke-width="2"/>
+
+      <!-- 文物节点 -->
+      <circle cx="150" cy="80" r="24" fill="url(#relicGrad)" stroke="#fff" stroke-width="2"/>
+      <text x="150" y="85" text-anchor="middle" font-size="14" fill="#fff" font-weight="bold">🏺</text>
+      <text x="150" y="118" text-anchor="middle" font-size="12" fill="#333">青铜鼎</text>
+      
+      <circle cx="350" cy="60" r="24" fill="url(#relicGrad)" stroke="#fff" stroke-width="2"/>
+      <text x="350" y="65" text-anchor="middle" font-size="14" fill="#fff" font-weight="bold">🏺</text>
+      <text x="350" y="98" text-anchor="middle" font-size="12" fill="#333">青花瓷</text>
+      
+      <circle cx="550" cy="80" r="24" fill="url(#relicGrad)" stroke="#fff" stroke-width="2"/>
+      <text x="550" y="85" text-anchor="middle" font-size="14" fill="#fff" font-weight="bold">🏺</text>
+      <text x="550" y="118" text-anchor="middle" font-size="12" fill="#333">唐三彩</text>
+
+      <!-- 博物馆节点 -->
+      <circle cx="120" cy="200" r="24" fill="url(#museumGrad)" stroke="#fff" stroke-width="2"/>
+      <text x="120" y="205" text-anchor="middle" font-size="14" fill="#fff" font-weight="bold">🏛</text>
+      <text x="120" y="238" text-anchor="middle" font-size="12" fill="#333">大英博物馆</text>
+      
+      <circle cx="350" cy="220" r="24" fill="url(#museumGrad)" stroke="#fff" stroke-width="2"/>
+      <text x="350" y="225" text-anchor="middle" font-size="14" fill="#fff" font-weight="bold">🏛</text>
+      <text x="350" y="258" text-anchor="middle" font-size="12" fill="#333">卢浮宫</text>
+      
+      <circle cx="580" cy="200" r="24" fill="url(#museumGrad)" stroke="#fff" stroke-width="2"/>
+      <text x="580" y="205" text-anchor="middle" font-size="14" fill="#fff" font-weight="bold">🏛</text>
+      <text x="580" y="238" text-anchor="middle" font-size="12" fill="#333">故宫</text>
+
+      <!-- 朝代节点 -->
+      <circle cx="150" cy="350" r="24" fill="url(#periodGrad)" stroke="#fff" stroke-width="2"/>
+      <text x="150" y="355" text-anchor="middle" font-size="14" fill="#fff" font-weight="bold">📜</text>
+      <text x="150" y="388" text-anchor="middle" font-size="12" fill="#333">商代</text>
+      
+      <circle cx="350" cy="380" r="24" fill="url(#periodGrad)" stroke="#fff" stroke-width="2"/>
+      <text x="350" y="385" text-anchor="middle" font-size="14" fill="#fff" font-weight="bold">📜</text>
+      <text x="350" y="418" text-anchor="middle" font-size="12" fill="#333">唐代</text>
+      
+      <circle cx="550" cy="350" r="24" fill="url(#periodGrad)" stroke="#fff" stroke-width="2"/>
+      <text x="550" y="355" text-anchor="middle" font-size="14" fill="#fff" font-weight="bold">📜</text>
+      <text x="550" y="388" text-anchor="middle" font-size="12" fill="#333">明代</text>
+    </svg>
+
+    <div class="legend">
+      <div class="legend-item">
+        <span class="legend-dot" style="background: #8B4513;"></span>
+        <span>文物</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot" style="background: #4facfe;"></span>
+        <span>博物馆</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot" style="background: #43e97b;"></span>
+        <span>朝代</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

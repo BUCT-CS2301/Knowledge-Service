@@ -18,60 +18,41 @@
         </el-select>
 
         <el-button type="primary" @click="showLegend = !showLegend">图例</el-button>
+        
+        <el-button type="default" @click="refreshData" :loading="isLoading">
+          <i class="el-icon-refresh"></i> 刷新
+        </el-button>
       </div>
 
       <div class="map-container">
         <div class="world-map">
-          <svg viewBox="0 0 800 400" class="map-svg">
-            <defs>
-              <filter id="glow">
-                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                <feMerge>
-                  <feMergeNode in="coloredBlur"/>
-                  <feMergeNode in="SourceGraphic"/>
-                </feMerge>
-              </filter>
-            </defs>
-
-            <g class="continents">
-              <path d="M100,150 Q150,100 200,120 L220,180 Q180,200 150,180 Z" fill="#e8e8e8" stroke="#ccc" stroke-width="1"/>
-              <path d="M250,80 Q350,50 420,80 L450,180 Q400,220 300,200 Z" fill="#e8e8e8" stroke="#ccc" stroke-width="1"/>
-              <path d="M500,60 Q600,40 700,70 L720,150 Q650,180 550,160 Z" fill="#e8e8e8" stroke="#ccc" stroke-width="1"/>
-              <path d="M600,250 Q680,220 750,260 L780,320 Q700,350 620,330 Z" fill="#e8e8e8" stroke="#ccc" stroke-width="1"/>
-              <path d="M150,280 Q250,250 320,280 L350,350 Q280,380 200,360 Z" fill="#e8e8e8" stroke="#ccc" stroke-width="1"/>
-              <path d="M450,300 Q520,280 580,310 L600,360 Q540,380 480,350 Z" fill="#e8e8e8" stroke="#ccc" stroke-width="1"/>
-            </g>
-
-            <g>
+          <div class="map-image-wrapper">
+            <img src="/world-map.png" alt="世界地图" class="map-image" @load="onMapLoad" />
+            
+            <svg class="markers-overlay" viewBox="0 0 800 400">
               <g
-                v-for="(location, index) in mapLocations"
+                v-for="(location, index) in filteredLocations"
                 :key="index"
                 :transform="`translate(${location.x}, ${location.y})`"
-                class="map-marker"
+                class="marker-group"
                 @click="selectLocation(index)"
-                @mouseenter="hoverLocation(index)"
+                @mouseenter="hoverLocation(index, $event)"
                 @mouseleave="unhoverLocation"
               >
                 <circle
-                  :r="selectedLocation === index ? 12 : 8"
+                  :r="selectedLocation === index ? 12 : 10"
                   :fill="selectedLocation === index ? '#8B4513' : '#e74c3c'"
-                  :stroke="selectedLocation === index ? '#5D3A1A' : '#c0392b'"
-                  stroke-width="2"
-                  filter="url(#glow)"
                   class="marker-circle"
                 />
-                <circle
-                  r="4"
-                  fill="white"
-                  class="marker-inner"
-                />
+                <circle r="4" fill="#fff" class="marker-inner" />
               </g>
-            </g>
-          </svg>
+            </svg>
+          </div>
 
-          <div v-if="hoveredLocation" class="location-tooltip" :style="tooltipStyle">
-            <div class="tooltip-name">{{ mapLocations[hoveredLocation].name }}</div>
-            <div class="tooltip-count">馆藏数量: {{ mapLocations[hoveredLocation].count }} 件</div>
+          <div v-if="hoveredLocation !== null && filteredLocations[hoveredLocation]" class="location-tooltip" :style="tooltipStyle">
+            <div class="tooltip-name">{{ filteredLocations[hoveredLocation].name }}</div>
+            <div class="tooltip-location">{{ filteredLocations[hoveredLocation].city }}, {{ filteredLocations[hoveredLocation].country }}</div>
+            <div class="tooltip-count">馆藏文物: {{ filteredLocations[hoveredLocation].count.toLocaleString() }}件</div>
           </div>
         </div>
 
@@ -114,7 +95,8 @@
 </template>
 
 <script>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import axios from 'axios'
 import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
 
@@ -129,32 +111,99 @@ export default {
     const selectedLocation = ref(null)
     const hoveredLocation = ref(null)
     const showLegend = ref(false)
-    const tooltipStyle = reactive({ left: '0px', top: '0px' })
+    const isLoading = ref(false)
+    const tooltipStyle = reactive({ left: '0px', top: '0px', display: 'none' })
+    const mapImageLoaded = ref(false)
 
-    const mapLocations = ref([
-      { name: '大英博物馆', city: '伦敦', country: '英国', x: 320, y: 110, count: 23000 },
-      { name: '大都会博物馆', city: '纽约', country: '美国', x: 680, y: 100, count: 15000 },
-      { name: '卢浮宫', city: '巴黎', country: '法国', x: 300, y: 100, count: 8000 },
-      { name: '东京国立博物馆', city: '东京', country: '日本', x: 720, y: 280, count: 12000 },
-      { name: '维多利亚博物馆', city: '墨尔本', country: '澳大利亚', x: 750, y: 330, count: 5000 },
-      { name: '柏林亚洲艺术博物馆', city: '柏林', country: '德国', x: 360, y: 90, count: 6000 },
-      { name: '波士顿美术馆', city: '波士顿', country: '美国', x: 670, y: 95, count: 4500 },
-      { name: '韩国国立中央博物馆', city: '首尔', country: '韩国', x: 690, y: 260, count: 3800 }
-    ])
+    const mapLocations = ref([])
+
+    const mapWidth = 800
+    const mapHeight = 400
+
+    const latLngToPixel = (lat, lng) => {
+      const x = ((lng + 180) / 360) * mapWidth * 0.85 + 60
+      const y = ((90 - lat) / 180) * mapHeight * 1.15 + 25
+      return { x: Math.round(x), y: Math.round(y) }
+    }
+
+    const mockLocations = [
+      { name: '大英博物馆', city: '伦敦', country: '英国', region: 'europe', x: 402, y: 135, count: 23000 },
+      { name: '大都会博物馆', city: '纽约', country: '美国', region: 'america', x: 300, y: 160, count: 15000 },
+      { name: '卢浮宫', city: '巴黎', country: '法国', region: 'europe', x: 410, y: 150, count: 8000 },
+      { name: '东京国立博物馆', city: '东京', country: '日本', region: 'asia', x: 660, y: 185, count: 12000 },
+      { name: '维多利亚博物馆', city: '墨尔本', country: '澳大利亚', region: 'oceania', x: 680, y: 315, count: 5000 },
+      { name: '柏林亚洲艺术博物馆', city: '柏林', country: '德国', region: 'europe', x: 438, y: 145, count: 6000 },
+      { name: '波士顿美术馆', city: '波士顿', country: '美国', region: 'america', x: 300, y: 155, count: 4500 },
+      { name: '韩国国立中央博物馆', city: '首尔', country: '韩国', region: 'asia', x: 638, y: 180, count: 3800 }
+    ]
+
+    const loadMockData = () => {
+      mapLocations.value = mockLocations
+    }
+
+    const fetchLocations = async () => {
+      isLoading.value = true
+      try {
+        const response = await axios.get('http://localhost:8085/api/v1/data/geo-map')
+        if (response.data && response.data.data && response.data.data.length > 0) {
+          mapLocations.value = response.data.data.map(loc => {
+            if (loc.lat !== undefined && loc.lng !== undefined) {
+              const { x, y } = latLngToPixel(loc.lat, loc.lng)
+              return { ...loc, x: Math.round(x), y: Math.round(y) }
+            }
+            return loc
+          })
+        } else {
+          loadMockData()
+        }
+      } catch (error) {
+        console.error('Failed to fetch map data:', error)
+        loadMockData()
+      }
+      isLoading.value = false
+    }
+
+    const refreshData = () => {
+      fetchLocations()
+    }
+
+    const filteredLocations = computed(() => {
+      if (!mapLocations.value.length) return []
+      if (selectedRegion.value === 'global') {
+        return mapLocations.value
+      }
+      return mapLocations.value.filter(loc => loc.region === selectedRegion.value)
+    })
+
+    const getLocationByIndex = (index) => {
+      return filteredLocations.value[index]
+    }
+
+    onMounted(() => {
+      fetchLocations()
+    })
+
+    const onMapLoad = () => {
+      mapImageLoaded.value = true
+    }
 
     const selectLocation = (index) => {
       selectedLocation.value = selectedLocation.value === index ? null : index
     }
 
-    const hoverLocation = (index) => {
+    const hoverLocation = (index, event) => {
       hoveredLocation.value = index
-      const loc = mapLocations.value[index]
-      tooltipStyle.left = loc.x + 50 + 'px'
-      tooltipStyle.top = loc.y - 40 + 'px'
+      const location = filteredLocations.value[index]
+      if (location) {
+        tooltipStyle.left = (location.x + 15) + 'px'
+        tooltipStyle.top = (location.y - 50) + 'px'
+        tooltipStyle.display = 'block'
+      }
     }
 
     const unhoverLocation = () => {
       hoveredLocation.value = null
+      tooltipStyle.display = 'none'
     }
 
     return {
@@ -162,11 +211,15 @@ export default {
       selectedLocation,
       hoveredLocation,
       showLegend,
+      isLoading,
       tooltipStyle,
       mapLocations,
+      filteredLocations,
       selectLocation,
       hoverLocation,
-      unhoverLocation
+      unhoverLocation,
+      refreshData,
+      onMapLoad
     }
   }
 }
@@ -232,20 +285,53 @@ export default {
   position: relative;
   background: #fafafa;
   border-radius: 12px;
-  padding: 20px;
+  padding: 0;
+  min-height: 500px;
+  height: 500px;
+  overflow: hidden;
+}
 
-  .map-svg {
-    width: 100%;
-    height: auto;
+.map-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.map-image {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 12px;
+}
+
+.markers-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+
+  .marker-group {
+    pointer-events: auto;
+    cursor: pointer;
+
+    .marker-circle {
+      transition: all 0.2s ease;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    }
+
+    .marker-inner {
+      transition: all 0.2s ease;
+    }
+
+    &:hover .marker-circle {
+      r: 14;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+    }
   }
-}
-
-.map-marker {
-  cursor: pointer;
-}
-
-.marker-circle {
-  transition: all 0.3s;
 }
 
 .location-tooltip {
@@ -265,9 +351,16 @@ export default {
     margin-bottom: 5px;
   }
 
+  .tooltip-location {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 5px;
+  }
+
   .tooltip-count {
     font-size: 13px;
-    color: #666;
+    color: #e74c3c;
+    font-weight: 500;
   }
 }
 
@@ -287,6 +380,9 @@ export default {
 }
 
 .museum-list {
+  max-height: 450px;
+  overflow-y: auto;
+
   .museum-item {
     display: flex;
     align-items: center;
@@ -364,5 +460,14 @@ export default {
       color: #666;
     }
   }
+}
+
+:deep(.leaflet-popup-content-wrapper) {
+  border-radius: 8px;
+  padding: 0;
+}
+
+:deep(.leaflet-popup-tip) {
+  background-color: #fff;
 }
 </style>

@@ -58,7 +58,18 @@ public class JsonResult<E> implements Serializable {
 
     public void setData(E data) {
         this.data = data;
+    }
 
+    public static <T> JsonResult<T> success(T data) {
+        JsonResult<T> result = new JsonResult<>();
+        result.setState(OK);
+        result.setMessage("success");
+        result.setData(data);
+        return result;
+    }
+
+    public static <T> JsonResult<T> success() {
+        return success(null);
     }
 }
 
