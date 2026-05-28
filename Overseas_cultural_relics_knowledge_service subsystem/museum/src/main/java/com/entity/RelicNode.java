@@ -6,18 +6,20 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.neo4j.core.schema.GeneratedValue;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
+import org.springframework.data.neo4j.core.schema.Property;
 
 import java.io.Serializable;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Node("Relic")
+@Node("Artifact")
 public class RelicNode implements Serializable {
     @Id
     @GeneratedValue
     private Long id;
 
+    @Property("object_id")
     private String objectId;
     private String title;
     private String period;

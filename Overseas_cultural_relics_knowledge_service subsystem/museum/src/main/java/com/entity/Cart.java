@@ -6,6 +6,8 @@ import java.math.BigInteger;
 @Data
 public class Cart {
     private BigInteger id;
+    /** Neo4j 文物唯一标识，用于详情查询 */
+    private String objectId;
     private String object_name;//文物姓名
     private String cat1;//材质
     private String cat2;//朝代

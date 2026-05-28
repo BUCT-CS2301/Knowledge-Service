@@ -6,10 +6,10 @@ spring:
     password: knowledge123
 
   neo4j:
-    uri: bolt://127.0.0.1:7687
+    uri: bolt://39.106.231.119:7687
     authentication:
       username: neo4j
-      password: knowledge123
+      password: password123
 
 
 mybatis:

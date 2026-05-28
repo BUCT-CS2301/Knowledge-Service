@@ -30,11 +30,9 @@ import MainHeader from '../../components/MainHeader/MainHeader.vue'
 import MainFooter from '../../components/MainFooter/MainFooter.vue'
 
 const MUSEUMS = [
-  { label: '弗利尔美术馆', value: 'Freersackler' },
-  { label: '丹佛美术馆', value: 'Denver Art Museum' },
-  { label: '鲁宾艺术馆', value: 'Rubin Museum' },
-  { label: '亚洲协会及其博物馆', value: 'Asia Society Museum' },
-  { label: '大卫奥斯利艺术博物馆', value: 'David Owsley Museum of Art' }
+  { label: '克利夫兰艺术博物馆', value: '克利夫兰' },
+  { label: '尼尔森-阿特金斯艺术博物馆', value: '尼尔森' },
+  { label: '宾夕法尼亚大学考古与人类学博物馆', value: '宾夕法尼亚' }
 ]
 
 export default {

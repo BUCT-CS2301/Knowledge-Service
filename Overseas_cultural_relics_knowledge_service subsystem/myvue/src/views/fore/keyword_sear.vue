@@ -48,18 +48,18 @@ import MainFooter from '../../components/MainFooter/MainFooter.vue'
 import { ElMessage } from 'element-plus'
 
 const DYNASTY_MAP = {
-  tang: 'Tang Dynasty',
-  song: 'Song Dynasty',
-  yuan: 'Yuan Dynasty',
-  ming: 'Ming Dynasty',
-  qing: 'Qing Dynasty',
-  beiwei: 'Northern Wei Dynasty',
-  zhou: 'Zhou Dynasty',
-  dongzhou: 'Eastern Zhou Dynasty',
-  nansong: 'Northern Song',
-  donghan: 'Eastern Han Dynasty',
-  xihan: 'Western Han Dynasty',
-  zhongshang: 'Shang Dynasty'
+  tang: '唐',
+  song: '宋',
+  yuan: '元',
+  ming: '明',
+  qing: '清',
+  beiwei: '北魏',
+  zhou: '周',
+  dongzhou: '东周',
+  nansong: '宋',
+  donghan: '汉',
+  xihan: '汉',
+  zhongshang: '商'
 }
 
 export default {

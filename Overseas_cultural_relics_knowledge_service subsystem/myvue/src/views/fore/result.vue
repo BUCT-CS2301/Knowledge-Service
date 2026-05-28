@@ -71,16 +71,17 @@
             <router-link :to="{ path: '/antiqueDetail', query: { id: item.id } }" class="card-link">
               <el-card shadow="hover" class="artifact-card">
                 <img
-                  :src="item.img_url || placeholderImg"
+                  :src="imageFor(item)"
                   class="artifact-img"
                   alt=""
-                  @error="onImgError"
+                  @error="onImgError($event, item)"
                 >
                 <div class="artifact-info">
                   <div class="artifact-name">{{ item.object_name || '未命名' }}</div>
                   <div class="artifact-meta">
                     <span v-if="item.cat2">{{ item.cat2 }}</span>
                     <span v-if="item.cat1"> · {{ item.cat1 }}</span>
+                    <span v-if="item.makers_name"> · {{ item.makers_name }}</span>
                   </div>
                 </div>
               </el-card>
@@ -115,6 +116,7 @@ import {
 } from '@/api/search'
 import { exportToCsv, exportToJson } from '@/utils/export'
 import { MOCK_ARTIFACTS } from '@/utils/mockArtifacts'
+import { getArtifactImageUrl } from '@/utils/artifactPlaceholder'
 import { ElMessage } from 'element-plus'
 
 export default {
@@ -131,7 +133,6 @@ export default {
       currentPage: 1,
       pageSize: 12,
       summaryText: '',
-      placeholderImg: 'https://picsum.photos/seed/artifact/400/300',
       dynastyOptions: [],
       materialOptions: []
     }
@@ -227,10 +228,14 @@ export default {
     applySecondaryFilter () {
       let list = [...this.allList]
       if (this.filterDynasty) {
-        list = list.filter((item) => item.cat2 === this.filterDynasty)
+        list = list.filter((item) =>
+          item.cat2 && (item.cat2.includes(this.filterDynasty) || this.filterDynasty.includes(item.cat2))
+        )
       }
       if (this.filterMaterial) {
-        list = list.filter((item) => item.cat1 === this.filterMaterial)
+        list = list.filter((item) =>
+          item.cat1 && (item.cat1.includes(this.filterMaterial) || this.filterMaterial.includes(item.cat1))
+        )
       }
       this.displayList = list
       this.currentPage = 1
@@ -254,8 +259,11 @@ export default {
         ElMessage.success('JSON 已导出')
       }
     },
-    onImgError (e) {
-      e.target.src = this.placeholderImg
+    imageFor (item) {
+      return getArtifactImageUrl(item)
+    },
+    onImgError (e, item) {
+      e.target.src = getArtifactImageUrl({ ...item, img_url: '' })
     }
   }
 }

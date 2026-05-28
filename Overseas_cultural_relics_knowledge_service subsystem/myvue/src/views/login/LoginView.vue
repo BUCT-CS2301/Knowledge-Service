@@ -5,7 +5,7 @@
       <el-form ref="loginForm" :model="form" :rules="rules" label-width="80px" class="login-box">
         <h3 class="login-title">登录</h3>
         <el-form-item label="账号" prop="username">
-          <el-input type="text" placeholder="请输入账号" v-model="form.username"/>
+          <el-input type="text" placeholder="请输入用户ID，如 1001" v-model="form.username"/>
         </el-form-item>
         <el-form-item label="密码" prop="password">
           <el-input type="password" placeholder="请输入密码" v-model="form.password"/>
@@ -32,9 +32,9 @@
 </template>
 
 <script>
-import axios from 'axios'
 import MainFooter from '../../components/MainFooter/MainFooter'
 import MainHeader from '../../components/MainHeader/MainHeader'
+import { login, parseLoginResponse } from '@/api/user'
 
 export default {
   name: 'Login',
@@ -66,45 +66,36 @@ export default {
         return
       }
 
-      try {
-        const response = await axios.post('/api/v1/auth/login', {
-          username: this.form.username,
-          password: this.form.password
-        }, {
-          timeout: 3000  // 添加3秒超时，避免长时间等待
-        })
+      const userId = String(this.form.username || '').trim()
+      if (!/^\d+$/.test(userId)) {
+        this.$message.error('账号请填写数字用户ID（默认测试账号：1001）')
+        return
+      }
 
-        if (response.data.code === 200) {
-          const data = response.data.data
-          localStorage.setItem('accessToken', data.accessToken)
-          localStorage.setItem('username', data.username)
-          localStorage.setItem('user_id', data.id.toString())
-          localStorage.setItem('user_name', data.userName || data.username)
-          localStorage.setItem('islogin', '1')
-          this.$message.success('登录成功！')
-          setTimeout(() => {
-            this.$router.push('/index')
-          }, 1000)
-        } else {
-          this.$message.error(response.data.message || '登录失败')
-        }
+      try {
+        const response = await login({
+          username: userId,
+          password: this.form.password
+        })
+        const data = parseLoginResponse(response)
+        localStorage.setItem('accessToken', data.token || '')
+        localStorage.setItem('username', String(data.userId))
+        localStorage.setItem('user_id', String(data.userId))
+        localStorage.setItem('user_name', data.userName || String(data.userId))
+        localStorage.setItem('islogin', '1')
+        this.$message.success('登录成功！')
+        setTimeout(() => {
+          this.$router.push('/index')
+        }, 800)
       } catch (error) {
         console.error('登录失败:', error)
-        // 如果后端不可用，尝试使用本地存储作为备用
-        const users = JSON.parse(localStorage.getItem('users') || '[]')
-        const user = users.find(u => u.username === this.form.username && u.password === this.form.password)
-
-        if (user) {
-          localStorage.setItem('username', user.username)
-          localStorage.setItem('user_id', user.id.toString())
-          localStorage.setItem('user_name', user.user_name)
-          localStorage.setItem('islogin', '1')
-          this.$message.warning('使用本地数据登录成功！')
-          setTimeout(() => {
-            this.$router.push('/index')
-          }, 1000)
+        const msg = error.message || '账号或密码错误'
+        if (error.code === 4000) {
+          this.$message.error('用户不存在，请检查用户ID')
+        } else if (error.code === 6000) {
+          this.$message.error('密码错误')
         } else {
-          this.$message.error('账号或密码错误')
+          this.$message.error(msg)
         }
       }
     },

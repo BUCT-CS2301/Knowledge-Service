@@ -30,16 +30,11 @@ import MainHeader from '../../components/MainHeader/MainHeader.vue'
 import MainFooter from '../../components/MainFooter/MainFooter.vue'
 
 const USAGES = [
-  { label: '金属', value: 'Metalwork' },
-  { label: '陶瓷', value: 'Ceramic' },
-  { label: '珠宝', value: 'Jewelry and Ornament' },
-  { label: '拓印', value: 'Rubbing' },
-  { label: '书法', value: 'Calligraphy' },
-  { label: '雕塑', value: 'Sculpture' },
-  { label: '绘画', value: 'Painting' },
-  { label: '工具', value: 'Tool and Equipment' },
-  { label: '玉', value: 'Jade' },
-  { label: '兵器', value: 'Weapon and Armament' }
+  { label: '陶瓷', value: '陶瓷' },
+  { label: '绘画', value: '绘画' },
+  { label: '雕塑', value: '雕塑' },
+  { label: '打印', value: '打印' },
+  { label: '亚洲', value: '亚洲' }
 ]
 
 export default {
