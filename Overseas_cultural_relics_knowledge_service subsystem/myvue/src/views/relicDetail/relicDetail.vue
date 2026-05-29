@@ -43,7 +43,16 @@
 
         <!-- 详细描述 -->
         <div class="description-card">
-          <h2 class="card-title">文物简介</h2>
+          <div class="card-header">
+            <h2 class="card-title">文物简介</h2>
+            <button
+              class="collect-btn"
+              :class="{ collected: isCollected }"
+              @click="toggleCollect">
+              <i class="el-icon-star-on"></i>
+              <span>{{ isCollected ? '已收藏' : '收藏' }}</span>
+            </button>
+          </div>
           <p class="description-text">{{ relic.description }}</p>
         </div>
 
@@ -111,6 +120,7 @@ export default {
     this.loadRelicDetail()
     this.loadComments()
     this.checkCollectionStatus()
+    this.recordVisit()
   },
   methods: {
     loadRelicDetail () {
@@ -218,6 +228,7 @@ export default {
         localStorage.setItem('collections', JSON.stringify(collections))
         this.isCollected = false
         this.$message.success('取消收藏成功')
+        this.recordLog('collect', `取消收藏了文物「${this.relic.name}」`)
       } else {
         collections.push({
           id: Date.now(),
@@ -231,10 +242,88 @@ export default {
         localStorage.setItem('collections', JSON.stringify(collections))
         this.isCollected = true
         this.$message.success('收藏成功')
+        this.recordLog('collect', `收藏了文物「${this.relic.name}」`)
       }
+    },
+    recordLog (type, text) {
+      const userId = localStorage.getItem('user_id')
+      if (!userId) return
+
+      const iconMap = {
+        collect: 'el-icon-star-on',
+        comment: 'el-icon-message',
+        visit: 'el-icon-eye',
+        update: 'el-icon-edit'
+      }
+
+      const log = {
+        type: type,
+        icon: iconMap[type] || 'el-icon-info',
+        text: text,
+        time: this.formatTime(new Date()),
+        timestamp: Date.now()
+      }
+
+      const allLogs = JSON.parse(localStorage.getItem('userLogs') || '{}')
+      if (!allLogs[userId]) {
+        allLogs[userId] = []
+      }
+
+      allLogs[userId].unshift(log)
+
+      if (allLogs[userId].length > 20) {
+        allLogs[userId] = allLogs[userId].slice(0, 20)
+      }
+
+      localStorage.setItem('userLogs', JSON.stringify(allLogs))
     },
     focusComment () {
       document.querySelector('.comment-input').focus()
+    },
+    recordVisit () {
+      const userId = localStorage.getItem('user_id')
+      if (!userId) return
+
+      const visitLog = {
+        type: 'visit',
+        icon: 'el-icon-eye',
+        text: `浏览了文物「${this.relic.name}」`,
+        time: this.formatTime(new Date()),
+        relicId: this.relic.id,
+        relicName: this.relic.name,
+        timestamp: Date.now()
+      }
+
+      const allLogs = JSON.parse(localStorage.getItem('userLogs') || '{}')
+      if (!allLogs[userId]) {
+        allLogs[userId] = []
+      }
+
+      const existingIndex = allLogs[userId].findIndex(log => log.relicId === this.relic.id)
+      if (existingIndex !== -1) {
+        allLogs[userId].splice(existingIndex, 1)
+      }
+
+      allLogs[userId].unshift(visitLog)
+
+      if (allLogs[userId].length > 20) {
+        allLogs[userId] = allLogs[userId].slice(0, 20)
+      }
+
+      localStorage.setItem('userLogs', JSON.stringify(allLogs))
+    },
+    formatTime (date) {
+      const now = new Date()
+      const diff = now - date
+      const minutes = Math.floor(diff / 60000)
+      const hours = Math.floor(diff / 3600000)
+      const days = Math.floor(diff / 86400000)
+
+      if (minutes < 1) return '刚刚'
+      if (minutes < 60) return `${minutes}分钟前`
+      if (hours < 24) return `${hours}小时前`
+      if (days < 7) return `${days}天前`
+      return date.toLocaleString('zh-CN')
     },
     submitComment () {
       if (!localStorage.getItem('username')) {
@@ -262,6 +351,7 @@ export default {
       this.comments.push(newCommentObj)
       this.newComment = ''
       this.$message.success('评论成功')
+      this.recordLog('comment', `评论了文物「${this.relic.name}」`)
     }
   }
 }
@@ -414,20 +504,49 @@ export default {
   padding: 25px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 
-  .card-title {
-    font-size: 20px;
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 15px;
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
     padding-bottom: 10px;
     border-bottom: 2px solid #8B4513;
   }
 
+  .card-title {
+    font-size: 20px;
+    font-weight: bold;
+    color: #333;
+    margin: 0;
+  }
+
+  .collect-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 25px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: #fff0f0;
+    color: #e74c3c;
+
+    &:hover {
+      background: #ffe0e0;
+    }
+
+    &.collected {
+      background: #ffe0e0;
+    }
+  }
+
   .description-text {
-    font-size: 16px;
+    font-size: 15px;
     line-height: 1.8;
     color: #666;
-    text-align: justify;
+    margin: 0;
   }
 }
 

@@ -1,0 +1,281 @@
+{
+  "nodes": [
+    {
+      "id": "r3",
+      "type": "文物",
+      "label": "宋代青瓷碗",
+      "x": 350,
+      "y": 80
+    },
+    {
+      "id": "r10",
+      "type": "文物",
+      "label": "唐代银茶碾",
+      "x": 450,
+      "y": 70
+    },
+    {
+      "id": "唐代",
+      "type": "朝代",
+      "label": "唐代",
+      "x": 400,
+      "y": 450
+    },
+    {
+      "id": "m1",
+      "type": "博物馆",
+      "label": "大英博物馆",
+      "x": 200,
+      "y": 300
+    },
+    {
+      "id": "r8",
+      "type": "文物",
+      "label": "元青花梅瓶",
+      "x": 550,
+      "y": 80
+    },
+    {
+      "id": "m3",
+      "type": "博物馆",
+      "label": "卢浮宫",
+      "x": 400,
+      "y": 320
+    },
+    {
+      "id": "清代",
+      "type": "朝代",
+      "label": "清代",
+      "x": 550,
+      "y": 480
+    },
+    {
+      "id": "m6",
+      "type": "博物馆",
+      "label": "弗利尔美术馆",
+      "x": 700,
+      "y": 300
+    },
+    {
+      "id": "r7",
+      "type": "文物",
+      "label": "东汉陶俑",
+      "x": 250,
+      "y": 150
+    },
+    {
+      "id": "r1",
+      "type": "文物",
+      "label": "商代青铜鼎",
+      "x": 150,
+      "y": 100
+    },
+    {
+      "id": "r2",
+      "type": "文物",
+      "label": "唐代三彩骆驼",
+      "x": 300,
+      "y": 70
+    },
+    {
+      "id": "汉代",
+      "type": "朝代",
+      "label": "汉代",
+      "x": 250,
+      "y": 480
+    },
+    {
+      "id": "m5",
+      "type": "博物馆",
+      "label": "艾尔米塔什博物馆",
+      "x": 600,
+      "y": 320
+    },
+    {
+      "id": "r9",
+      "type": "文物",
+      "label": "西周青铜簋",
+      "x": 650,
+      "y": 100
+    },
+    {
+      "id": "m2",
+      "type": "博物馆",
+      "label": "大都会艺术博物馆",
+      "x": 300,
+      "y": 320
+    },
+    {
+      "id": "r5",
+      "type": "文物",
+      "label": "清代珐琅彩碗",
+      "x": 750,
+      "y": 100
+    },
+    {
+      "id": "战国",
+      "type": "朝代",
+      "label": "战国",
+      "x": 650,
+      "y": 450
+    },
+    {
+      "id": "明代",
+      "type": "朝代",
+      "label": "明代",
+      "x": 700,
+      "y": 500
+    },
+    {
+      "id": "r4",
+      "type": "文物",
+      "label": "明代青花瓷瓶",
+      "x": 600,
+      "y": 80
+    },
+    {
+      "id": "西周",
+      "type": "朝代",
+      "label": "西周",
+      "x": 150,
+      "y": 450
+    },
+    {
+      "id": "元代",
+      "type": "朝代",
+      "label": "元代",
+      "x": 500,
+      "y": 500
+    },
+    {
+      "id": "m4",
+      "type": "博物馆",
+      "label": "故宫博物院",
+      "x": 500,
+      "y": 300
+    },
+    {
+      "id": "r6",
+      "type": "文物",
+      "label": "战国玉璧",
+      "x": 200,
+      "y": 70
+    },
+    {
+      "id": "商代",
+      "type": "朝代",
+      "label": "商代",
+      "x": 300,
+      "y": 500
+    },
+    {
+      "id": "宋代",
+      "type": "朝代",
+      "label": "宋代",
+      "x": 200,
+      "y": 450
+    }
+  ],
+  "edges": [
+    {
+      "source": "r10",
+      "target": "m4",
+      "relationType": "收藏于"
+    },
+    {
+      "source": "r8",
+      "target": "元代",
+      "relationType": "属于"
+    },
+    {
+      "source": "r2",
+      "target": "唐代",
+      "relationType": "属于"
+    },
+    {
+      "source": "r9",
+      "target": "西周",
+      "relationType": "属于"
+    },
+    {
+      "source": "r1",
+      "target": "m1",
+      "relationType": "收藏于"
+    },
+    {
+      "source": "r4",
+      "target": "明代",
+      "relationType": "属于"
+    },
+    {
+      "source": "r3",
+      "target": "m3",
+      "relationType": "收藏于"
+    },
+    {
+      "source": "r5",
+      "target": "m5",
+      "relationType": "收藏于"
+    },
+    {
+      "source": "r3",
+      "target": "宋代",
+      "relationType": "属于"
+    },
+    {
+      "source": "r4",
+      "target": "m4",
+      "relationType": "收藏于"
+    },
+    {
+      "source": "r6",
+      "target": "战国",
+      "relationType": "属于"
+    },
+    {
+      "source": "r1",
+      "target": "商代",
+      "relationType": "属于"
+    },
+    {
+      "source": "r6",
+      "target": "m6",
+      "relationType": "收藏于"
+    },
+    {
+      "source": "r10",
+      "target": "唐代",
+      "relationType": "属于"
+    },
+    {
+      "source": "r7",
+      "target": "汉代",
+      "relationType": "属于"
+    },
+    {
+      "source": "r9",
+      "target": "m3",
+      "relationType": "收藏于"
+    },
+    {
+      "source": "r5",
+      "target": "清代",
+      "relationType": "属于"
+    },
+    {
+      "source": "r8",
+      "target": "m2",
+      "relationType": "收藏于"
+    },
+    {
+      "source": "r7",
+      "target": "m1",
+      "relationType": "收藏于"
+    },
+    {
+      "source": "r2",
+      "target": "m2",
+      "relationType": "收藏于"
+    }
+  ]
+}

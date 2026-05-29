@@ -1,0 +1,137 @@
+# 数据可视化环境配置文件
+
+version: '3.8'
+
+services:
+  # ==================== 前端服务 ====================
+  frontend:
+    container_name: cultural_relics_frontend
+    build:
+      context: ./Overseas_cultural_relics_knowledge_service subsystem/myvue
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - VITE_API_BASE_URL=http://localhost:8085
+    volumes:
+      - ./Overseas_cultural_relics_knowledge_service subsystem/myvue:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - visualization_network
+
+  # ==================== 后端服务 ====================
+  backend:
+    container_name: cultural_relics_backend
+    build:
+      context: ./Overseas_cultural_relics_knowledge_service subsystem/museum
+      dockerfile: Dockerfile
+    ports:
+      - "8085:8085"
+      - "8086:8086"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/muse
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-root}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-password}
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USERNAME=${NEO4J_USER:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-password}
+    volumes:
+      - ./Overseas_cultural_relics_knowledge_service subsystem/museum:/app
+      - maven_cache:/root/.m2
+    depends_on:
+      - mysql
+      - neo4j
+    networks:
+      - visualization_network
+
+  # ==================== MySQL 数据库 ====================
+  mysql:
+    container_name: cultural_relics_mysql
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_PASSWORD:-password}
+      - MYSQL_DATABASE=muse
+      - MYSQL_USER=${MYSQL_USER:-root}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-password}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    networks:
+      - visualization_network
+
+  # ==================== Neo4j 图数据库 ====================
+  neo4j:
+    container_name: cultural_relics_neo4j
+    image: neo4j:4.4
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-password}
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=2g
+      - NEO4J_dbms_memory_pagecache_size=1g
+    volumes:
+      - neo4j_data:/data
+      - ./neo4j/import:/import:ro
+    networks:
+      - visualization_network
+
+  # ==================== Python Morph-KGC 服务 ====================
+  morph_kgc:
+    container_name: morph_kgc_service
+    build:
+      context: ./知识图谱
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USERNAME=${NEO4J_USER:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-password}
+      - MYSQL_URI=mysql+pymysql://${MYSQL_USER:-root}:${MYSQL_PASSWORD:-password}@mysql:3306/muse
+    volumes:
+      - ./知识图谱:/app
+      - kg_output:/app/output
+    depends_on:
+      - neo4j
+      - mysql
+    networks:
+      - visualization_network
+
+  # ==================== Nginx 反向代理 ====================
+  nginx:
+    container_name: visualization_nginx
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - visualization_network
+
+networks:
+  visualization_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
+  neo4j_data:
+    driver: local
+  maven_cache:
+    driver: local
+  kg_output:
+    driver: local

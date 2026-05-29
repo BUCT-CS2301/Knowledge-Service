@@ -61,6 +61,7 @@ export default {
   methods: {
     async pageInit () {
       const accessToken = storage.getItem('accessToken')
+      const userId = storage.getItem('user_id')
       const username = storage.getItem('username')
 
       if (!username) {
@@ -94,19 +95,24 @@ export default {
 
       // 后端不可用时，使用本地存储作为备用
       const users = JSON.parse(storage.getItem('users') || '[]')
-      const user = users.find(u => u.username === username)
+      const user = users.find(u => String(u.id) === userId)
 
       if (user) {
         this.userInfo = {
-          user_name: user.user_name || username,
-          sex: user.sex,
-          tele: user.tele,
-          bio: user.bio
+          user_name: user.nickname || user.user_name || username,
+          sex: user.sex === '0' ? '女' : (user.sex === '1' ? '男' : '未设置'),
+          tele: user.tele || user.phone || '未设置',
+          bio: user.bio || '未设置'
         }
       } else {
         this.userInfo.user_name = username || '游客'
       }
     }
+  },
+  beforeRouteEnter (to, from, next) {
+    next(vm => {
+      vm.pageInit()
+    })
   },
   created () {
     this.pageInit()

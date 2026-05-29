@@ -33,10 +33,9 @@
 </template>
 
 <script>
-import axios from 'axios'
 import MainFooter from '../../components/MainFooter/MainFooter'
 import MainHeader from '../../components/MainHeader/MainHeader'
-import defaultAvatar from '../../assets/timg.jpeg'
+import { register, parseRegisterResponse } from '@/api/user'
 
 export default {
   name: 'Register',
@@ -95,54 +94,71 @@ export default {
       }
 
       try {
-        const response = await axios.post('/api/v1/users', {
+        const response = await register({
           username: this.form.username,
           password: this.form.password,
-          userName: this.form.username,
-          sex: this.form.sex,
-          tele: this.form.tele,
-          avatar: '',
-          bio: ''
+          nickname: this.form.username,
+          phone: this.form.tele || ''
         })
-
-        if (response.data.code === 200) {
-          this.$message.success('注册成功')
-          setTimeout(() => {
-            this.$router.push('/login')
-          }, 1000)
-        } else {
-          this.$message.error(response.data.message || '注册失败')
-        }
-      } catch (error) {
-        console.error('注册失败:', error)
-        const users = JSON.parse(localStorage.getItem('users') || '[]')
-        const exists = users.find(u => u.username === this.form.username)
-
-        if (exists) {
-          this.$message.error('用户名已存在')
-          return
-        }
-
-        const newUser = {
-          id: Date.now(),
-          username: this.form.username,
-          password: this.form.password,
-          user_name: this.form.username,
-          sex: this.form.sex,
-          tele: this.form.tele,
-          avatar: defaultAvatar,
-          bio: '',
-          user_login: 1
-        }
-
-        users.push(newUser)
-        localStorage.setItem('users', JSON.stringify(users))
-
-        this.$message.warning('使用本地数据注册成功')
+        const data = parseRegisterResponse(response)
+        this.$message.success(
+          `注册成功！您的登录账号（用户ID）为：${data.userId}，请使用该数字ID登录`
+        )
         setTimeout(() => {
           this.$router.push('/login')
         }, 1000)
+      } catch (error) {
+        console.error('注册失败:', error)
+        // 后端接口不可用，使用本地存储作为备用
+        if (error.message && error.message.includes('Network Error')) {
+          this.registerWithLocalStorage()
+        } else if (error.code === 6000) {
+          this.$message.error('用户名已存在')
+        } else {
+          this.$message.error(error.message || '注册失败')
+        }
       }
+    },
+    registerWithLocalStorage () {
+      const users = JSON.parse(localStorage.getItem('users') || '[]')
+      // 检查用户名是否已存在
+      const exists = users.some(u => u.username === this.form.username)
+      if (exists) {
+        this.$message.error('用户名已存在')
+        return
+      }
+      // 生成简短的用户ID（4-6位数字）
+      const userId = this.generateShortUserId(users)
+      // 保存用户信息到本地存储
+      const newUser = {
+        id: userId,
+        username: this.form.username,
+        password: this.form.password,
+        sex: this.form.sex === '女' ? '0' : '1',
+        tele: this.form.tele || '',
+        nickname: this.form.username,
+        email: '',
+        avatar: ''
+      }
+      users.push(newUser)
+      localStorage.setItem('users', JSON.stringify(users))
+      this.$message.success(
+        `注册成功！您的登录账号（用户ID）为：${userId}，请使用该数字ID登录`
+      )
+      setTimeout(() => {
+        this.$router.push('/login')
+      }, 1000)
+    },
+    generateShortUserId (users) {
+      // 生成4位用户ID，从1001开始递增
+      let userId = 1001
+      const existingIds = users.map(u => Number(u.id)).filter(id => !isNaN(id)).sort((a, b) => a - b)
+
+      if (existingIds.length > 0) {
+        userId = existingIds[existingIds.length - 1] + 1
+      }
+
+      return userId
     },
     turn_to_login () {
       this.$router.push('/login')

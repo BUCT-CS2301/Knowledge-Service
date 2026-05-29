@@ -1,0 +1,6 @@
+# Morph-KGC 知识图谱构建依赖
+morph-kgc[mysql]
+rdflib
+neo4j
+pandas
+pymysql

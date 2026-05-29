@@ -4,7 +4,7 @@
     <el-card :body-style="{ padding: '0px' }">
       <div class="block">
         <span class="demonstration"></span>
-        <img :src="form1.img_url" class="image">
+        <img :src="imageUrl" class="image">
       </div>
       <div style="padding: 14px;">
         <span>文物名称：{{form1.object_name}}</span>
@@ -22,7 +22,7 @@
         </div>
         <div class="bottom clearfix">
           <el-button type="primary" @click="changeButton" v-if="isStared">
-            已收�?
+            已收藏
             <i class="el-icon-star-on"></i>
           </el-button>
         </div>
@@ -78,6 +78,7 @@
 import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
 import axios from 'axios'
+import { getApiRoot } from '@/config/api'
 var storage = window.localStorage
 export default {
   name: 'antiqueDetail',
@@ -88,9 +89,12 @@ export default {
       form1: {
         name: '古董',
         pic: 'src/assets/timg.jpeg',
+        img_url: 'src/assets/timg.jpeg',
         period: '100-1-1',
         url: 'www.baidu.com'
       },
+      // 后端服务器地址，用于拼接相对路径图片
+      baseUrl: getApiRoot(),
       btnShow: false,
       replyComment: '',
       myName: 'GQS',
@@ -116,6 +120,35 @@ export default {
         uid: '',
         content: ''
       }
+    }
+  },
+  computed: {
+    imageUrl () {
+      // 获取图片URL（处理后端返回的 null/undefined/空字符串）
+      const url = this.form1.img_url || this.form1.pic || ''
+      
+      // 如果是空字符串、null、undefined，直接返回默认图片
+      if (!url || url === 'null' || url === 'undefined') {
+        return '/timg.jpeg'
+      }
+      
+      // 如果是有效的http URL，直接返回
+      if (url.startsWith('http')) {
+        return url
+      }
+      
+      // 如果是后端返回的相对路径（如 /upload/xxx.jpg），拼接后端地址
+      if (url.startsWith('/')) {
+        return this.baseUrl + url
+      }
+      
+      // 如果是本地资源路径（如 src/assets/xxx），返回默认图
+      if (url.includes('assets/') || url.includes('src/')) {
+        return '/timg.jpeg'
+      }
+      
+      // 其他未知情况，返回默认图片
+      return '/timg.jpeg'
     }
   },
   created () {
@@ -149,7 +182,7 @@ export default {
             this.$message({
               showClose: true,
               type: 'warning',
-              message: '已取消收�?
+              message: '已取消收藏'
             })
             this.isStared = 0
             this.form1.if_collect = 0
@@ -221,7 +254,7 @@ export default {
           axios.post('http://localhost:8080/search/searchById/comment', this.commentForm// 注意数据是直接保存到json对象
           ).then((response) => {
             if (response.data.state === 200) {
-              alert('评论成功�?)
+              alert('评论成功')
               this.$router.go(0)
             }
             console.log(response.data)
@@ -235,25 +268,25 @@ export default {
       this.replyComment = e.target.innerHTML
     },
     dateStr (date) {
-      // 获取js 时间�?
+      // 获取js 时间戳
       var time = new Date().getTime()
-      // 去掉 js 时间戳后三位，与php 时间戳保持一�?
+      // 去掉 js 时间戳后三位，与php 时间戳保持一致
       time = parseInt((time - date) / 1000)
-      // 存储转换�?
+      // 存储转换值
       var s
       if (time < 60 * 10) {
         // 十分钟内
         return '刚刚'
       } else if (time < 60 * 60 && time >= 60 * 10) {
-        // 超过十分钟少�?小时
+        // 超过十分钟少于1小时
         s = Math.floor(time / 60)
-        return s + '分钟�?
+        return s + '分钟前'
       } else if (time < 60 * 60 * 24 && time >= 60 * 60) {
         // 超过1小时少于24小时
         s = Math.floor(time / 60 / 60)
-        return s + '小时�?
+        return s + '小时前'
       } else if (time < 60 * 60 * 24 * 30 && time >= 60 * 60 * 24) {
-        // 超过1天少�?0天内
+        // 超过1天少于30天内
         s = Math.floor(time / 60 / 60 / 24)
         return s + '天前'
       } else {

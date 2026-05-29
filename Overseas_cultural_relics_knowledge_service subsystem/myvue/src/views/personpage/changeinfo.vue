@@ -136,11 +136,12 @@ export default {
 
           if (response.data.code === 200) {
             const data = response.data.data
-            this.form.name = data.userName || data.username || ''
-            this.form.sex = data.sex || '男'
-            this.form.tel = data.tele || ''
+            this.form.name = data.userName || data.username || data.nickname || ''
+            this.form.sex = data.sex === '0' ? '女' : (data.sex === '1' ? '男' : '男')
+            this.form.tel = data.phone || data.tele || ''
             this.form.bio = data.bio || ''
-            this.userInfo.id = data.id || userId || ''
+            this.userInfo.id = data.objectId || data.id || userId || ''
+            this.userInfo.password = '' // 后端登录的用户没有本地密码
             return
           }
         } catch (error) {
@@ -150,12 +151,13 @@ export default {
 
       // 后端不可用时，使用本地存储作为备用
       const users = JSON.parse(localStorage.getItem('users') || '[]')
-      const user = users.find(u => u.username === username)
+      // 用 user_id 查找用户，而不是 username
+      const user = users.find(u => String(u.id) === userId)
 
       if (user) {
-        this.form.name = user.user_name || ''
-        this.form.sex = user.sex || '男'
-        this.form.tel = user.tele || ''
+        this.form.name = user.nickname || user.username || ''
+        this.form.sex = user.sex === '0' ? '女' : (user.sex === '1' ? '男' : '男')
+        this.form.tel = user.tele || user.phone || ''
         this.form.bio = user.bio || ''
         this.userInfo.password = user.password || ''
         this.userInfo.id = user.id || userId || ''
@@ -210,13 +212,25 @@ export default {
           }
         } catch (error) {
           console.error('修改用户信息失败:', error)
+          // 后端不可用（无论什么错误），使用本地存储
+          this.updateUserInfoLocal()
+          return
         }
+      } else {
+        // 没有accessToken，直接使用本地存储
+        this.updateUserInfoLocal()
+        return
+      }
+    },
+    updateUserInfoLocal () {
+      const userId = localStorage.getItem('user_id')
+      if (!userId) {
+        this.$message.error('用户不存在，请重新登录')
+        return
       }
 
-      // 后端不可用时，使用本地存储作为备用
-      const username = localStorage.getItem('username')
       const users = JSON.parse(localStorage.getItem('users') || '[]')
-      const index = users.findIndex(u => u.username === username)
+      const index = users.findIndex(u => String(u.id) === userId)
 
       if (index === -1) {
         this.$message.error('用户不存在')
@@ -229,9 +243,10 @@ export default {
       }
 
       const localUpdateData = {
-        user_name: this.form.name,
-        sex: this.form.sex,
+        nickname: this.form.name,
+        sex: this.form.sex === '女' ? '0' : '1',
         tele: this.form.tel,
+        phone: this.form.tel,
         bio: this.form.bio
       }
 
@@ -246,7 +261,10 @@ export default {
         localStorage.setItem('user_name', this.form.name)
       }
 
-      this.$message.warning('使用本地数据修改成功!')
+      this.$message.success('修改成功!')
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
     },
     resetForm () {
       this.pageInit()

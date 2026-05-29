@@ -107,7 +107,7 @@ export default {
       this.user.userpic = defaultAvatar
     },
     pageInit () {
-      if (!localStorage.getItem('username')) {
+      if (!localStorage.getItem('user_id')) {
         this.$message.warning('请先登录')
         setTimeout(() => {
           this.$router.push('/login')
@@ -115,15 +115,15 @@ export default {
         return
       }
 
-      const username = localStorage.getItem('username')
+      const userId = localStorage.getItem('user_id')
       const users = JSON.parse(localStorage.getItem('users') || '[]')
-      const user = users.find(u => u.username === username)
+      const user = users.find(u => String(u.id) === userId)
 
       if (user) {
-        this.user.username = user.user_name || username
+        this.user.username = user.nickname || user.user_name || user.username || userId
         this.user.userpic = user.avatar && user.avatar !== '' ? user.avatar : this.user.userpic
       } else {
-        this.user.username = username
+        this.user.username = localStorage.getItem('user_name') || userId
       }
     }
   }

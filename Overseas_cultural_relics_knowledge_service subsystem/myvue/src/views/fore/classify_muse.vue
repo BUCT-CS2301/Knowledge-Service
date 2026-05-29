@@ -1,332 +1,134 @@
-
 <template>
-<div>
-  <MainHeader></MainHeader>
-  <el-container>
-    <el-main>
-      <div>
-        <div v-if="flag">
-      <div >
-        <span class="title">选择博物�?/span>
-        <el-radio v-model="searchForm.v_4" label="Freersackler">弗利尔美术馆</el-radio>
-        <el-radio v-model="searchForm.v_4" label="Denver Art Museum">丹佛美术�?/el-radio>
-        <el-radio v-model="searchForm.v_4" label="Rubin Museum">鲁宾艺术�?/el-radio>
-        <el-radio v-model="searchForm.v_4" label="Asia Society Museum">亚洲协会及其博物�?/el-radio>
-        <el-radio v-model="searchForm.v_4" label="David Owsley Museum of Art">大卫奥斯利艺术博物馆</el-radio>
+  <div>
+    <MainHeader />
+    <div class="classify-container">
+      <div class="classify-card">
+        <h2 class="classify-title">按博物馆分类浏览</h2>
+        <div class="options-group">
+          <label
+            v-for="item in museums"
+            :key="item.value"
+            class="option-label"
+            :class="{ active: selected === item.value }"
+          >
+            <input type="radio" v-model="selected" :value="item.value" />
+            <span>{{ item.label }}</span>
+          </label>
+        </div>
+        <div class="action-row">
+          <el-button @click="$router.back()">返回</el-button>
+          <el-button type="primary" :disabled="!selected" @click="doSearch">确定查询</el-button>
+        </div>
       </div>
-          <el-button type="primary" @click="onSubmit_to_search">�?�?/el-button>
-        </div>
-        <div v-else >
-          <el-button type="primary" @click="ars">按字母降�?/el-button>
-          <el-button type="primary" @click="up">按字母升�?/el-button>
-          <div style="font-size: 14px;">
-            <div style="background-color: #d3dce6;color: gray;">
-              <div style="margin: 0 200px;">
-                <div style="display: flex;margin-bottom: 20px;">
-                  <el-row>
-                    <el-col v-for="(item,index) in res_form" :key="(item,index)" :span="6">
-                      <div class="grid-content bg-purple" :style="'flex: 1;border: 1px solid #dfdfdf;'+(index>-1?'margin-left: 20px;':'')" >
-                        <router-link :to="{path: '/antiqueDetail', query: {id:item.id}}">
-                          <el-card :body-style="{ padding: '0px',width:'300px',height:'400px' }"class="vert">
-                            <img :src="item.img_url" class="image" alt="">
-                            <div style="padding: 14px;">
-                              <span>{{item.object_name}}</span>
-                              <div class="bottom clearfix">
-                                <time class="time">{{ item.cat2 }}</time>
-                                <el-button type="text" class="button" >详情</el-button>
-                              </div>
-                            </div>
-                          </el-card>
-                        </router-link>
-                      </div>
-                    </el-col>
-                  </el-row>
-                </div>
-
-              </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-    </el-main>
-  </el-container>
-  <MainFooter></MainFooter>
-</div>
+    </div>
+    <MainFooter />
+  </div>
 </template>
 
 <script>
-import axios from 'axios'
-import MainFooter from '../../components/MainFooter/MainFooter'
-import MainHeader from '../../components/MainHeader/MainHeader'
+import MainHeader from '../../components/MainHeader/MainHeader.vue'
+import MainFooter from '../../components/MainFooter/MainFooter.vue'
+
+const MUSEUMS = [
+  { label: '克利夫兰艺术博物馆', value: '克利夫兰' },
+  { label: '尼尔森-阿特金斯艺术博物馆', value: '尼尔森' },
+  { label: '宾夕法尼亚大学考古与人类学博物馆', value: '宾夕法尼亚' }
+]
+
 export default {
-  name: 'search_bar',
-  components: {
-    MainHeader,
-    MainFooter
-  },
+  components: { MainHeader, MainFooter },
   data () {
     return {
-      // 避免多个select选值混�?
-      searchForm: {
-        c: 'museum',
-        v_4: ''
-      },
-      res_form: [{
-        object_name: '',
-        cat2: '',
-        img_url: '',
-        // eslint-disable-next-line no-undef
-        id: 0
-      }],
-      flag: true
+      selected: '',
+      museums: MUSEUMS
     }
   },
   methods: {
-    onSubmit_to_search () {
-      if (this.searchForm.v_4 === '') { alert('请选择博物�?) } else {
-        axios.post('http://localhost:8080/search/classification', this.searchForm).then((response) => {
-          console.log(response.data)
-          if (response.data.state === 200) {
-            // eslint-disable-next-line no-sequences,no-unused-expressions
-            this.res_form = response.data.data,
-            this.flag = false
-          } else {
-            alert(response.data)
-          }
-        }).catch(function (error) { console.log(error) })
-        console.log('Received values of form: ', this.searchForm)
-      }
-    },
-    up () {
-      let arr = this.res_form.sort(function (x, y) {
-        if (x.object_name < y.object_name) {
-          return -1
-        } else if (x.object_name > y.object_name) {
-          return 1
-        } else {
-          return 0
-        }
+    doSearch () {
+      this.$router.push({
+        path: '/result',
+        query: { mode: 'classify', c: 'museum', v_4: this.selected }
       })
-    },
-    ars () {
-      let arr = this.res_form.sort(function (x, y) {
-        return y.object_name.localeCompare(x.object_name)
-      })
-      this.res_form = arr
     }
-  },
-
+  }
 }
-
 </script>
 
-<style scoped>
-/*  .image{*/
-/*    !*width: 250px;*!*/
-/*    !*height: 30%;*!*/
-
-/*    width: 150px;*/
-/*    height: 150px*/
-/*  }*/
-/*.el-row {margin-bottom: 20px; }*/
-/*.el-col {*/
-/*  border-radius: 4px;*/
-/*}*/
-/*.bg-purple-dark {*/
-/*  background: #99a9bf;*/
-/*}*/
-/*.bg-purple {*/
-/*  background: #d3dce6;*/
-/*}*/
-/*.bg-purple-light {*/
-/*  background: #e5e9f2;*/
-/*}*/
-/*.grid-content {*/
-/*  border-radius: 4px;*/
-/*  min-height: 36px;*/
-/*}*/
-/*.row-bg {*/
-/*  padding: 10px 0;*/
-/*  background-color: #f9fafc;*/
-/*}*/
-/*.el-header, .el-footer {*/
-/*  background-color: #B3C0D1;*/
-/*  color: #333;*/
-/*  text-align: center;*/
-/*  line-height: 60px;*/
-/*}*/
-
-/*.el-aside {*/
-/*  background-color: #D3DCE6;*/
-/*  color: #333;*/
-/*  text-align: center;*/
-/*  line-height: 200px;*/
-/*}*/
-
-/*.el-main {*/
-/*  background-color: #E9EEF3;*/
-/*  color: #333;*/
-/*  text-align: center;*/
-/*  line-height: 160px;*/
-/*}*/
-
-/*body > .el-container {*/
-/*  margin-bottom: 40px;*/
-/*}*/
-
-/*.el-container:nth-child(5) .el-aside,*/
-/*.el-container:nth-child(6) .el-aside {*/
-/*  line-height: 260px;*/
-/*}*/
-
-/*.el-container:nth-child(7) .el-aside {*/
-/*  line-height: 320px;*/
-/*}*/
-/*  body > .el-container {*/
-/*    margin-bottom: 40px;*/
-/*  }*/
-
-/*  .el-container:nth-child(5) .el-aside,*/
-/*  .el-container:nth-child(6) .el-aside {*/
-/*    line-height: 260px;*/
-/*  }*/
-
-/*  .el-container:nth-child(7) .el-aside {*/
-/*    line-height: 320px;*/
-/*  }*/
-/*  .time {*/
-/*    font-size: 13px;*/
-/*    color: #999;*/
-/*  }*/
-
-/*  .bottom {*/
-/*    margin-top: 13px;*/
-/*    line-height: 12px;*/
-/*  }*/
-
-/*  .button {*/
-/*    padding: 0;*/
-/*    float: right;*/
-/*  }*/
-
-/*  .image {*/
-/*    width: 100%;*/
-/*    display: block;*/
-/*  }*/
-
-/*  .clearfix:before,*/
-/*  .clearfix:after {*/
-/*    display: table;*/
-/*    content: "";*/
-/*  }*/
-
-/*  .clearfix:after {*/
-/*    clear: both*/
-/*  }*/
-.vert{
-  padding: 0px;
-  width: 300px;
-  height: 400px;
-  justify-content: space-around;
-}
-.image{
-  /*width: 250px;*/
-  /*height: 30%;*/
-  width: 150px;
-  height: 150px
-}
-.el-row {margin-bottom: 20px; }
-.el-col {
-  border-radius: 4px;
-}
-.bg-purple-dark {
-  background: #99a9bf;
-}
-.bg-purple {
-  background: #d3dce6;
+<style lang="scss" scoped>
+.classify-container {
+  min-height: calc(100vh - 160px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 60px 5%;
+  background: #f5f5f5;
 }
 
-.grid-content {
-  border-radius: 4px;
-  min-height: 36px;
-}
-.row-bg {
-  padding: 10px 0;
-  background-color: #f9fafc;
-}
-.el-header, .el-footer {
-  background-color: #B3C0D1;
-  color: #333;
-  text-align: center;
-  line-height: 60px;
-}
-
-.el-aside {
-  background-color: #D3DCE6;
-  color: #333;
-  text-align: center;
-  line-height: 200px;
-}
-
-.el-main {
-  background-color: #E9EEF3;
-  color: #333;
-  text-align: center;
-  line-height: 160px;
-}
-
-body > .el-container {
-  margin-bottom: 40px;
-}
-
-.el-container:nth-child(5) .el-aside,
-.el-container:nth-child(6) .el-aside {
-  line-height: 260px;
-}
-
-.el-container:nth-child(7) .el-aside {
-  line-height: 320px;
-}
-body > .el-container {
-  margin-bottom: 40px;
-}
-
-.el-container:nth-child(5) .el-aside,
-.el-container:nth-child(6) .el-aside {
-  line-height: 260px;
-}
-
-.el-container:nth-child(7) .el-aside {
-  line-height: 320px;
-}
-.time {
-  font-size: 13px;
-  color: #999;
-}
-
-.bottom {
-  margin-top: 13px;
-  line-height: 12px;
-}
-
-.button {
-  padding: 0;
-  float: right;
-}
-
-.image {
+.classify-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 40px 48px;
+  max-width: 720px;
   width: 100%;
-  display: block;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
-.clearfix:before,
-.clearfix:after {
-  display: table;
-  content: "";
+.classify-title {
+  font-size: 20px;
+  color: #333;
+  margin: 0 0 32px;
 }
 
-.clearfix:after {
-  clear: both
+.options-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 36px;
+}
+
+.option-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #8b4513;
+    background: #fff8f0;
+  }
+
+  &.active {
+    border-color: #8b4513;
+    background: #fff8f0;
+    color: #8b4513;
+  }
+
+  input[type='radio'] {
+    accent-color: #8b4513;
+  }
+
+  span {
+    font-size: 14px;
+  }
+}
+
+.action-row {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+
+  :deep(.el-button--primary) {
+    background-color: #8b4513;
+    border-color: #8b4513;
+
+    &:hover {
+      background-color: #6b3510;
+      border-color: #6b3510;
+    }
+  }
 }
 </style>

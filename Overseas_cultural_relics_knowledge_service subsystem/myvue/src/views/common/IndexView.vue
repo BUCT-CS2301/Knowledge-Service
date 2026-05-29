@@ -299,7 +299,7 @@ export default {
     isCollected (relicId) {
       if (!localStorage.getItem('username')) return false
       const collections = JSON.parse(localStorage.getItem('collections') || '[]')
-      return collections.some(c => c.relicId === relicId)
+      return collections.some(c => String(c.relicId) === String(relicId))
     },
     toggleCollect (relic) {
       if (!localStorage.getItem('username')) {
@@ -314,6 +314,7 @@ export default {
         collections.splice(index, 1)
         localStorage.setItem('collections', JSON.stringify(collections))
         this.$message.success('取消收藏成功')
+        this.recordLog('collect', `取消收藏了文物「${relic.name}」`)
       } else {
         collections.push({
           id: Date.now(),
@@ -326,7 +327,53 @@ export default {
         })
         localStorage.setItem('collections', JSON.stringify(collections))
         this.$message.success('收藏成功')
+        this.recordLog('collect', `收藏了文物「${relic.name}」`)
       }
+    },
+    recordLog (type, text) {
+      const userId = localStorage.getItem('user_id')
+      if (!userId) return
+
+      const iconMap = {
+        collect: 'el-icon-star-on',
+        comment: 'el-icon-message',
+        visit: 'el-icon-eye',
+        update: 'el-icon-edit'
+      }
+
+      const log = {
+        type: type,
+        icon: iconMap[type] || 'el-icon-info',
+        text: text,
+        time: this.formatTime(new Date()),
+        timestamp: Date.now()
+      }
+
+      const allLogs = JSON.parse(localStorage.getItem('userLogs') || '{}')
+      if (!allLogs[userId]) {
+        allLogs[userId] = []
+      }
+
+      allLogs[userId].unshift(log)
+
+      if (allLogs[userId].length > 20) {
+        allLogs[userId] = allLogs[userId].slice(0, 20)
+      }
+
+      localStorage.setItem('userLogs', JSON.stringify(allLogs))
+    },
+    formatTime (date) {
+      const now = new Date()
+      const diff = now - date
+      const minutes = Math.floor(diff / 60000)
+      const hours = Math.floor(diff / 3600000)
+      const days = Math.floor(diff / 86400000)
+
+      if (minutes < 1) return '刚刚'
+      if (minutes < 60) return `${minutes}分钟前`
+      if (hours < 24) return `${hours}小时前`
+      if (days < 7) return `${days}天前`
+      return date.toLocaleString('zh-CN')
     },
     getRelicComments (relicId) {
       const comments = JSON.parse(localStorage.getItem('comments') || '[]')
@@ -355,6 +402,7 @@ export default {
       localStorage.setItem('comments', JSON.stringify(comments))
       this.newComment = ''
       this.$message.success('评论成功')
+      this.recordLog('comment', `评论了文物「${this.selectedRelic.name}」`)
     },
     handleRelicImageError (event, relic) {
       // 图片加载失败时使用备用图片

@@ -55,11 +55,14 @@ export default {
 <style lang="scss" scoped>
 .visualization-index {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   background: #f5f5f5;
 }
 
 .visualization-content {
   padding: 40px 5%;
+  flex: 1;
 }
 
 .page-title {

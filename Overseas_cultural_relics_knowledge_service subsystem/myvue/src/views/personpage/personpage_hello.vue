@@ -104,24 +104,28 @@ export default {
       return '晚上好'
     }
   },
+  beforeRouteEnter (to, from, next) {
+    next(vm => {
+      vm.initData()
+    })
+  },
   mounted () {
     this.initData()
     this.startOnlineTimer()
   },
   methods: {
     async initData () {
-      const username = storage.getItem('username')
+      const userId = storage.getItem('user_id')
       const users = JSON.parse(storage.getItem('users') || '[]')
-      const user = users.find(u => u.username === username)
+      const user = users.find(u => String(u.id) === userId)
 
       if (user) {
-        this.username = user.user_name || username
+        this.username = user.nickname || user.user_name || user.username || userId || '用户'
         this.userAvatar = user.avatar && user.avatar !== '' ? user.avatar : defaultAvatar
       } else {
-        this.username = username || '用户'
+        this.username = storage.getItem('user_name') || userId || '用户'
       }
 
-      const userId = storage.getItem('user_id')
       const collections = JSON.parse(storage.getItem('collections') || '[]')
       const comments = JSON.parse(storage.getItem('comments') || '[]')
 
@@ -135,7 +139,7 @@ export default {
     async fetchUserLogs (userId) {
       const accessToken = storage.getItem('accessToken')
       if (!userId) {
-        this.setDefaultActivities()
+        this.loadLocalUserLogs()
         return
       }
 
@@ -163,13 +167,37 @@ export default {
               time: log.time || '刚刚'
             }
           })
+          // 保存到本地
+          this.saveLocalUserLogs(this.recentActivities)
         } else {
-          this.setDefaultActivities()
+          this.loadLocalUserLogs()
         }
       } catch (error) {
         console.log('获取用户日志失败:', error)
+        this.loadLocalUserLogs()
+      }
+    },
+    loadLocalUserLogs () {
+      const userId = storage.getItem('user_id')
+      if (!userId) {
+        this.setDefaultActivities()
+        return
+      }
+      const allLogs = JSON.parse(storage.getItem('userLogs') || '{}')
+      const userLogs = allLogs[userId] || []
+
+      if (userLogs.length > 0) {
+        this.recentActivities = userLogs.slice(0, 4)
+      } else {
         this.setDefaultActivities()
       }
+    },
+    saveLocalUserLogs (logs) {
+      const userId = storage.getItem('user_id')
+      if (!userId) return
+      const allLogs = JSON.parse(storage.getItem('userLogs') || '{}')
+      allLogs[userId] = logs
+      storage.setItem('userLogs', JSON.stringify(allLogs))
     },
     setDefaultActivities () {
       this.recentActivities = [

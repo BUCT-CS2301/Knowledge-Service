@@ -1,48 +1,66 @@
 <template>
   <div>
-    <MainHeader></MainHeader>
-    
+    <MainHeader />
+
     <div class="keyword-search-container">
       <div class="search-section">
         <div class="search-box-wrapper">
-          <el-input v-model="in_form.keyword" placeholder="请输入内容">
+          <el-input
+            v-model="in_form.keyword"
+            placeholder="输入文物名称、作者、博物馆等关键字"
+            clearable
+            @keyup.enter="doSearch"
+          >
             <template #append>
-              <el-button type="primary" @click="res_res">搜索</el-button>
+              <el-button type="primary" :loading="loading" @click="doSearch">搜索</el-button>
             </template>
           </el-input>
         </div>
       </div>
 
       <div class="filter-section">
-        <div class="filter-title">选择朝代</div>
+        <div class="filter-title">可选：按朝代缩小范围（结果页二次筛选）</div>
         <div class="dynasty-options">
           <label v-for="dynasty in dynasties" :key="dynasty.value" class="dynasty-label">
             <input type="radio" v-model="selectedDynasty" :value="dynasty.value">
             <span>{{ dynasty.label }}</span>
           </label>
         </div>
-
         <div class="dynasty-options">
           <label v-for="dynasty in dynasties2" :key="dynasty.value" class="dynasty-label">
             <input type="radio" v-model="selectedDynasty" :value="dynasty.value">
             <span>{{ dynasty.label }}</span>
           </label>
         </div>
-
         <div class="confirm-button-wrapper">
-          <el-button type="primary" @click="confirmSearch">确定</el-button>
+          <el-button type="primary" :loading="loading" @click="doSearch">确定</el-button>
         </div>
       </div>
     </div>
 
-    <MainFooter></MainFooter>
+    <MainFooter />
   </div>
 </template>
 
 <script>
-import MainHeader from '../../components/MainHeader/MainHeader'
-import MainFooter from '../../components/MainFooter/MainFooter'
-import axios from 'axios'
+import MainHeader from '../../components/MainHeader/MainHeader.vue'
+import MainFooter from '../../components/MainFooter/MainFooter.vue'
+import { ElMessage } from 'element-plus'
+
+const DYNASTY_MAP = {
+  tang: '唐',
+  song: '宋',
+  yuan: '元',
+  ming: '明',
+  qing: '清',
+  beiwei: '北魏',
+  zhou: '周',
+  dongzhou: '东周',
+  nansong: '宋',
+  donghan: '汉',
+  xihan: '汉',
+  zhongshang: '商'
+}
 
 export default {
   components: {
@@ -51,18 +69,17 @@ export default {
   },
   data () {
     return {
-      in_form: {
-        keyword: ''
-      },
+      loading: false,
+      in_form: { keyword: '' },
       selectedDynasty: '',
       dynasties: [
-        { label: '唐代', value: 'tang' },
-        { label: '宋代', value: 'song' },
-        { label: '元代', value: 'yuan' },
-        { label: '明代', value: 'ming' },
-        { label: '清代', value: 'qing' },
+        { label: '唐', value: 'tang' },
+        { label: '宋', value: 'song' },
+        { label: '元', value: 'yuan' },
+        { label: '明', value: 'ming' },
+        { label: '清', value: 'qing' },
         { label: '北魏', value: 'beiwei' },
-        { label: '周代', value: 'zhou' }
+        { label: '周', value: 'zhou' }
       ],
       dynasties2: [
         { label: '东周', value: 'dongzhou' },
@@ -74,29 +91,20 @@ export default {
     }
   },
   methods: {
-    res_res () {
-      if (!this.in_form.keyword.trim()) {
-        this.$message.warning('请输入搜索关键词')
+    doSearch () {
+      const keyword = (this.in_form.keyword || '').trim()
+      if (!keyword) {
+        ElMessage.warning('请输入搜索关键字')
         return
       }
-      
-      axios.post('http://localhost:8080/search/obscure', this.in_form).then((response) => {
-        console.log(response.data)
-        if (response.data.state === 200) {
-          this.$router.push({ path: '/result', query: { keyword: this.in_form.keyword } })
-        } else {
-          alert(response.data)
-        }
-      }).catch((error) => {
-        console.log(error)
-        this.$router.push({ path: '/result', query: { keyword: this.in_form.keyword } })
-      })
-    },
-    confirmSearch () {
-      const params = {}
-      if (this.in_form.keyword) params.keyword = this.in_form.keyword
-      if (this.selectedDynasty) params.dynasty = this.selectedDynasty
-      this.$router.push({ path: '/result', query: params })
+      const query = {
+        mode: 'obscure',
+        keyword
+      }
+      if (this.selectedDynasty) {
+        query.filterDynasty = DYNASTY_MAP[this.selectedDynasty] || this.selectedDynasty
+      }
+      this.$router.push({ path: '/result', query })
     }
   }
 }
@@ -114,7 +122,7 @@ export default {
   margin-bottom: 50px;
 
   .search-box-wrapper {
-    max-width: 500px;
+    max-width: 560px;
     margin: 0 auto;
   }
 
@@ -123,58 +131,74 @@ export default {
   }
 
   :deep(.el-button--primary) {
+    background-color: #8b4513 !important;
+    border-color: #8b4513 !important;
     height: 45px;
+    color: #fff !important;
+
+    &:hover {
+      background-color: #6b3510 !important;
+      border-color: #6b3510 !important;
+    }
   }
 }
 
 .filter-section {
-  max-width: 600px;
+  max-width: 720px;
   margin: 0 auto;
-  background: white;
-  padding: 30px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-}
-
-.filter-title {
-  font-weight: bold;
-  margin-bottom: 20px;
-  color: #333;
-}
-
-.dynasty-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  margin-bottom: 15px;
-}
-
-.dynasty-label {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  padding: 8px 15px;
-  background: #f5f5f5;
-  border-radius: 20px;
-  transition: all 0.3s;
-
-  &:hover {
-    background: #e8e8e8;
-  }
-
-  input[type="radio"] {
-    margin-right: 8px;
-    cursor: pointer;
-  }
-
-  span {
-    font-size: 14px;
-    color: #666;
-  }
-}
-
-.confirm-button-wrapper {
   text-align: center;
-  margin-top: 20px;
+
+  .filter-title {
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 20px;
+    font-weight: 500;
+  }
+
+  .dynasty-options {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .dynasty-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    padding: 8px 16px;
+    background: white;
+    border-radius: 20px;
+    transition: all 0.3s;
+
+    &:hover {
+      background: #fff8f0;
+    }
+
+    input[type='radio'] {
+      accent-color: #8b4513;
+    }
+
+    span {
+      font-size: 14px;
+      color: #666;
+    }
+  }
+
+  .confirm-button-wrapper {
+    margin-top: 30px;
+
+    :deep(.el-button--primary) {
+      background-color: #8b4513 !important;
+      border-color: #8b4513 !important;
+
+      &:hover {
+        background-color: #6b3510 !important;
+        border-color: #6b3510 !important;
+      }
+    }
+  }
 }
 </style>
