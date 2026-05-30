@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mapper.CollectMapper">
+    <resultMap id="CollectEntityMap" type="com.entity.Collect">
+        <id column="id" property="id"/> <result column="user_id" property="uid"/> <result column="user_collect_id" property="rid"/>
+    </resultMap>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO
+            collect (user_id,user_collect_id) VALUES (#{uid}, #{rid})
+    </insert>
+    <delete id="delete">
+        DELETE FROM collect WHERE id= #{id}
+    </delete>
+    <select id="findByuidandrid" resultMap="CollectEntityMap">
+        SELECT * FROM collect WHERE user_id=#{uid} and user_collect_id=#{rid}
+    </select>
+    <select id="findByuid" resultType="com.entity.CollectView">
+        SELECT
+        collect.id as id,
+        collect.user_id as uid,
+        collect.user_collect_id as rid,
+        user.user_name as username,
+        cultural_relics_data.object_name as relicname
+        FROM collect,user,cultural_relics_data WHERE collect.user_id=#{uid} and collect.user_id=user.user_id and collect.user_collect_id=cultural_relics_data.id
+    </select>
+    <select id="findByid" resultMap="CollectEntityMap">
+        SELECT* FROM collect WHERE id=#{id}
+    </select>
+</mapper>

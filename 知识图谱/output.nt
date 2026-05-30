@@ -1,0 +1,76 @@
+<http://example.org/relic/r-003> <http://example.org/ontology/collectedBy> <http://example.org/museum/m-003> .
+<http://example.org/relic/r-005> <http://schema.org/additionalType> "瓷器" .
+<http://example.org/relic/r-005> <http://schema.org/name> "清代珐琅彩碗" .
+<http://example.org/relic/r-001> <http://schema.org/material> "青铜" .
+<http://example.org/relic/r-002> <http://schema.org/additionalType> "陶俑" .
+<http://example.org/period/清代> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Thing> .
+<http://example.org/museum/m-001> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Museum> .
+<http://example.org/relic/r-004> <http://schema.org/material> "瓷" .
+<http://example.org/relic/r-001> <http://schema.org/url> "https://example.com/r1" .
+<http://example.org/relic/r-004> <http://schema.org/description> "明代青花缠枝莲纹瓶" .
+<http://example.org/museum/m-004> <http://schema.org/url> "https://www.tnm.jp" .
+<http://example.org/relic/r-003> <http://schema.org/description> "南宋龙泉窑青瓷碗" .
+<http://example.org/relic/r-001> <http://schema.org/additionalType> "青铜器" .
+<http://example.org/museum/m-003> <http://schema.org/location> "Paris, France" .
+<http://example.org/period/清代> <http://schema.org/name> "清代" .
+<http://example.org/period/唐代> <http://schema.org/name> "唐代" .
+<http://example.org/period/商代> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Thing> .
+<http://example.org/relic/r-004> <http://schema.org/name> "明代青花瓷瓶" .
+<http://example.org/relic/r-002> <http://schema.org/material> "陶瓷" .
+<http://example.org/museum/m-002> <http://schema.org/url> "https://www.metmuseum.org" .
+<http://example.org/relic/r-004> <http://example.org/ontology/belongsTo> <http://example.org/period/明代> .
+<http://example.org/relic/r-003> <http://schema.org/alternateName> "宋代" .
+<http://example.org/relic/r-005> <http://schema.org/description> "清代珐琅彩花鸟纹碗" .
+<http://example.org/period/商代> <http://schema.org/name> "商代" .
+<http://example.org/museum/m-004> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Museum> .
+<http://example.org/relic/r-001> <http://schema.org/image> "https://example.com/relic1.jpg" .
+<http://example.org/relic/r-005> <http://example.org/ontology/belongsTo> <http://example.org/period/清代> .
+<http://example.org/museum/m-003> <http://schema.org/url> "https://www.louvre.fr" .
+<http://example.org/relic/r-005> <http://example.org/ontology/collectedBy> <http://example.org/museum/m-004> .
+<http://example.org/relic/r-001> <http://schema.org/name> "商代青铜鼎" .
+<http://example.org/relic/r-004> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/CreativeWork> .
+<http://example.org/relic/r-003> <http://schema.org/name> "宋代青瓷碗" .
+<http://example.org/relic/r-003> <http://schema.org/material> "瓷" .
+<http://example.org/period/明代> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Thing> .
+<http://example.org/relic/r-005> <http://schema.org/url> "https://example.com/r5" .
+<http://example.org/relic/r-002> <http://example.org/ontology/collectedBy> <http://example.org/museum/m-002> .
+<http://example.org/relic/r-004> <http://schema.org/alternateName> "明代" .
+<http://example.org/relic/r-002> <http://schema.org/name> "唐代三彩骆驼" .
+<http://example.org/relic/r-002> <http://schema.org/alternateName> "唐代" .
+<http://example.org/museum/m-003> <http://schema.org/name> "Musée du Louvre" .
+<http://example.org/relic/r-003> <http://schema.org/image> "https://example.com/relic3.jpg" .
+<http://example.org/relic/r-004> <http://schema.org/additionalType> "瓷器" .
+<http://example.org/relic/r-001> <http://example.org/ontology/belongsTo> <http://example.org/period/商代> .
+<http://example.org/relic/r-002> <http://example.org/ontology/belongsTo> <http://example.org/period/唐代> .
+<http://example.org/relic/r-005> <http://schema.org/alternateName> "清代" .
+<http://example.org/relic/r-005> <http://schema.org/material> "珐琅" .
+<http://example.org/museum/m-003> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Museum> .
+<http://example.org/relic/r-004> <http://example.org/ontology/collectedBy> <http://example.org/museum/m-001> .
+<http://example.org/relic/r-003> <http://example.org/ontology/belongsTo> <http://example.org/period/宋代> .
+<http://example.org/museum/m-004> <http://schema.org/location> "Tokyo, Japan" .
+<http://example.org/relic/r-002> <http://schema.org/url> "https://example.com/r2" .
+<http://example.org/museum/m-002> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Museum> .
+<http://example.org/relic/r-001> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/CreativeWork> .
+<http://example.org/museum/m-001> <http://schema.org/name> "The British Museum" .
+<http://example.org/museum/m-004> <http://schema.org/name> "Tokyo National Museum" .
+<http://example.org/relic/r-002> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/CreativeWork> .
+<http://example.org/period/宋代> <http://schema.org/name> "宋代" .
+<http://example.org/relic/r-001> <http://example.org/ontology/collectedBy> <http://example.org/museum/m-001> .
+<http://example.org/relic/r-003> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/CreativeWork> .
+<http://example.org/relic/r-003> <http://schema.org/url> "https://example.com/r3" .
+<http://example.org/period/宋代> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Thing> .
+<http://example.org/relic/r-001> <http://schema.org/alternateName> "商代" .
+<http://example.org/relic/r-004> <http://schema.org/image> "https://example.com/relic4.jpg" .
+<http://example.org/relic/r-002> <http://schema.org/description> "唐代三彩骆驼俑" .
+<http://example.org/museum/m-001> <http://schema.org/url> "https://www.britishmuseum.org" .
+<http://example.org/museum/m-001> <http://schema.org/location> "London, UK" .
+<http://example.org/relic/r-004> <http://schema.org/url> "https://example.com/r4" .
+<http://example.org/relic/r-002> <http://schema.org/image> "https://example.com/relic2.jpg" .
+<http://example.org/relic/r-005> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/CreativeWork> .
+<http://example.org/museum/m-002> <http://schema.org/name> "The Metropolitan Museum of Art" .
+<http://example.org/museum/m-002> <http://schema.org/location> "New York, USA" .
+<http://example.org/relic/r-003> <http://schema.org/additionalType> "瓷器" .
+<http://example.org/period/明代> <http://schema.org/name> "明代" .
+<http://example.org/relic/r-005> <http://schema.org/image> "https://example.com/relic5.jpg" .
+<http://example.org/relic/r-001> <http://schema.org/description> "商代晚期青铜祭祀用鼎" .
+<http://example.org/period/唐代> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Thing> .
