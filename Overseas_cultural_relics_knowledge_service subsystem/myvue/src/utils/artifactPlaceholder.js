@@ -40,7 +40,29 @@ function svgDataUri (palette, title) {
 export function getArtifactImageUrl (item) {
   const url = item?.img_url
   if (url && String(url).trim() && !String(url).includes('picsum.photos')) {
-    return url
+    return normalizeExternalImageUrl(String(url).trim())
   }
   return svgDataUri(pickPalette(item), item?.object_name)
+}
+
+const PROXY_HOSTS = ['art.nelson-atkins.org', 'penn.museum']
+
+function needsProxy (url) {
+  try {
+    const host = new URL(url).hostname.toLowerCase()
+    return PROXY_HOSTS.some((h) => host.includes(h))
+  } catch (_) {
+    return false
+  }
+}
+
+function toProxyUrl (url) {
+  const stripped = url.replace(/^https?:\/\//i, '')
+  return `https://images.weserv.nl/?url=${encodeURIComponent(stripped)}&output=jpg`
+}
+
+/** 外链图片：对防盗链域名走代理 */
+export function normalizeExternalImageUrl (url) {
+  if (!url || !/^https?:\/\//i.test(url)) return url
+  return needsProxy(url) ? toProxyUrl(url) : url
 }

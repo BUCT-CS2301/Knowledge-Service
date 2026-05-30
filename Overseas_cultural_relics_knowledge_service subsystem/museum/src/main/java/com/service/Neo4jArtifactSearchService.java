@@ -19,6 +19,18 @@ public class Neo4jArtifactSearchService {
 
     private static final int DEFAULT_LIMIT = 100;
 
+    /** 关键词过滤须放在 OPTIONAL MATCH 之前，避免 Neo4j 错误匹配 */
+    private static final String KEYWORD_WHERE = """
+            WHERE a.title CONTAINS $kw
+               OR coalesce(a.description, '') CONTAINS $kw
+               OR EXISTS { MATCH (a)-[:所属朝代]->(p0:Period) WHERE p0.name CONTAINS $kw }
+               OR EXISTS { MATCH (a)-[:收藏馆藏]->(m0:Museum)
+                           WHERE m0.name CONTAINS $kw OR coalesce(m0.name_en, '') CONTAINS $kw }
+               OR EXISTS { MATCH (a)-[:制作材质]->(mat0:Material) WHERE mat0.name CONTAINS $kw }
+               OR EXISTS { MATCH (a)-[:文物品类]->(t0:ArtifactType) WHERE t0.name CONTAINS $kw }
+            WITH a
+            """;
+
     private static final String OPTIONAL_RELS = """
             OPTIONAL MATCH (a)-[:所属朝代]->(p:Period)
             OPTIONAL MATCH (a)-[:收藏馆藏]->(m:Museum)
@@ -62,14 +74,18 @@ public class Neo4jArtifactSearchService {
                  head([v IN collect(DISTINCT p.name) WHERE v IS NOT NULL AND trim(v) <> '' | v]) AS period,
                  head([v IN collect(DISTINCT t.name) WHERE v IS NOT NULL AND trim(v) <> '' | v]) AS artifactType,
                  head([v IN collect(DISTINCT m.name) WHERE v IS NOT NULL AND trim(v) <> '' | v]) AS museum,
-                 head([u IN collect(DISTINCT img.url) WHERE u IS NOT NULL AND u <> 'unknown' AND trim(u) <> '' | u]) AS imageUrl
+                 head([u IN collect(DISTINCT img.url) WHERE u IS NOT NULL AND u <> 'unknown' AND trim(u) <> '' | u]) AS imageFromRel
             RETURN a.object_id AS objectId,
                    a.title AS title,
                    coalesce(material, '') AS material,
                    coalesce(period, '') AS period,
                    coalesce(artifactType, '') AS type,
                    coalesce(museum, '') AS museum,
-                   coalesce(imageUrl, '') AS imageUrl
+                   coalesce(
+                     imageFromRel,
+                     a.imageUrl,
+                     ''
+                   ) AS imageUrl
             """;
 
     private final Neo4jClient neo4jClient;
@@ -85,15 +101,7 @@ public class Neo4jArtifactSearchService {
         }
         String cypher = """
                 MATCH (a:Artifact)
-                """ + OPTIONAL_RELS + """
-                WHERE a.title CONTAINS $kw
-                   OR a.description CONTAINS $kw
-                   OR coalesce(p.name, '') CONTAINS $kw
-                   OR coalesce(m.name, '') CONTAINS $kw
-                   OR coalesce(m.name_en, '') CONTAINS $kw
-                   OR coalesce(mat.name, '') CONTAINS $kw
-                   OR coalesce(t.name, '') CONTAINS $kw
-                """ + AGG_AND_RETURN + " LIMIT $limit";
+                """ + KEYWORD_WHERE + OPTIONAL_RELS + AGG_AND_RETURN + " LIMIT $limit";
         return query(cypher, Map.of("kw", kw, "limit", DEFAULT_LIMIT));
     }
 
@@ -104,9 +112,11 @@ public class Neo4jArtifactSearchService {
         }
         String cypher = """
                 MATCH (a:Artifact)-[:收藏馆藏]->(m:Museum)
-                """ + OPTIONAL_EXCEPT_MUSEUM + """
                 WHERE m.name CONTAINS $kw OR coalesce(m.name_en, '') CONTAINS $kw
-                """ + AGG_AND_RETURN + " LIMIT $limit";
+                WITH a, m
+                """ + OPTIONAL_EXCEPT_MUSEUM.replace(
+                "OPTIONAL MATCH (a)-[:收藏馆藏]->(m:Museum)\n", "")
+                + AGG_AND_RETURN + " LIMIT $limit";
         return query(cypher, Map.of("kw", kw, "limit", DEFAULT_LIMIT));
     }
 
@@ -150,23 +160,57 @@ public class Neo4jArtifactSearchService {
         if (conditions.isEmpty()) {
             return Collections.emptyList();
         }
-        if (!isPresent(museum)) {
-            cypher.append(" OPTIONAL MATCH (a)-[:收藏馆藏]->(m:Museum)");
-        }
-        if (!isPresent(period)) {
-            cypher.append(" OPTIONAL MATCH (a)-[:所属朝代]->(p:Period)");
-        }
-        if (!isPresent(material)) {
-            cypher.append(" OPTIONAL MATCH (a)-[:制作材质]->(mat:Material)");
-        }
-        if (!isPresent(type)) {
-            cypher.append(" OPTIONAL MATCH (a)-[:文物品类]->(t:ArtifactType)");
-        }
-        cypher.append(" OPTIONAL MATCH (a)-[:展示图片]->(img:Image)");
         cypher.append(" WHERE ").append(String.join(" AND ", conditions));
+        cypher.append(" WITH a");
+        cypher.append(" OPTIONAL MATCH (a)-[:所属朝代]->(p:Period)");
+        cypher.append(" OPTIONAL MATCH (a)-[:收藏馆藏]->(m:Museum)");
+        cypher.append(" OPTIONAL MATCH (a)-[:制作材质]->(mat:Material)");
+        cypher.append(" OPTIONAL MATCH (a)-[:文物品类]->(t:ArtifactType)");
+        cypher.append(" OPTIONAL MATCH (a)-[:展示图片]->(img:Image)");
         cypher.append(AGG_AND_RETURN).append(" LIMIT $limit");
         params.put("limit", DEFAULT_LIMIT);
         return query(cypher.toString(), params);
+    }
+
+    /** 文物详情：按 Neo4j objectId 查询完整信息（朝代/材质/品类/馆藏/图片/简介/原地址等） */
+    public Map<String, Object> findDetailByObjectId(String objectId) {
+        String oid = trim(objectId);
+        if (oid.isEmpty()) {
+            return null;
+        }
+        String cypher = """
+                MATCH (a:Artifact {object_id: $oid})
+                OPTIONAL MATCH (a)-[:所属朝代]->(p:Period)
+                OPTIONAL MATCH (a)-[:收藏馆藏]->(m:Museum)
+                OPTIONAL MATCH (a)-[:制作材质]->(mat:Material)
+                OPTIONAL MATCH (a)-[:文物品类]->(t:ArtifactType)
+                OPTIONAL MATCH (a)-[:展示图片]->(img:Image)
+                WITH a,
+                     head([v IN collect(DISTINCT p.name) WHERE v IS NOT NULL AND trim(v) <> '' | v]) AS period,
+                     head([v IN collect(DISTINCT m.name) WHERE v IS NOT NULL AND trim(v) <> '' | v]) AS museum,
+                     [v IN collect(DISTINCT mat.name) WHERE v IS NOT NULL AND trim(v) <> '' | v] AS materials,
+                     head([v IN collect(DISTINCT t.name) WHERE v IS NOT NULL AND trim(v) <> '' | v]) AS artifactType,
+                     head([u IN collect(DISTINCT img.url) WHERE u IS NOT NULL AND u <> 'unknown' AND trim(u) <> '' | u]) AS imageFromRel
+                RETURN a.object_id AS objectId,
+                       a.title AS object_name,
+                       coalesce(period, '') AS time_period,
+                       reduce(s = '', x IN materials | CASE WHEN s = '' THEN x ELSE s + '、' + x END) AS material,
+                       coalesce(artifactType, '') AS type,
+                       coalesce(museum, '') AS museum,
+                       coalesce(a.description, '') AS description,
+                       coalesce(a.dimensions, '') AS dimensions,
+                       coalesce(a.credit_line, '') AS credit_line,
+                       coalesce(a.accession_number, '') AS accession_number,
+                       coalesce(a.detailUrl, '') AS url,
+                       coalesce(imageFromRel, a.imageUrl, '') AS img_url
+                LIMIT 1
+                """;
+        return neo4jClient.query(cypher)
+                .bindAll(Map.of("oid", oid))
+                .fetch()
+                .first()
+                .map(LinkedHashMap::new)
+                .orElse(null);
     }
 
     public List<Cart> sortByName(boolean ascending) {
@@ -195,8 +239,10 @@ public class Neo4jArtifactSearchService {
         }
         // 避免 text block 与 + 拼接产生 "WHEREmat" 等 Cypher 语法错误
         String cypher = "MATCH (a:Artifact)-[:" + relType + "]->(" + nodeVar + ":" + label + ")\n"
+                + "WHERE " + nodeVar + ".name CONTAINS $kw\n"
+                + "WITH a\n"
                 + optionalBlock
-                + "\nWHERE " + nodeVar + ".name CONTAINS $kw\n"
+                + "\n"
                 + AGG_AND_RETURN + " LIMIT $limit";
         return query(cypher, Map.of("kw", kw, "limit", DEFAULT_LIMIT));
     }

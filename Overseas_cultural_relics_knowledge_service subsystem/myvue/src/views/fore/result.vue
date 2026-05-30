@@ -68,12 +68,13 @@
             :md="8"
             :lg="6"
           >
-            <router-link :to="{ path: '/antiqueDetail', query: { id: item.id } }" class="card-link">
+            <router-link :to="{ path: '/antiqueDetail', query: { objectId: item.objectId, id: item.id } }" class="card-link">
               <el-card shadow="hover" class="artifact-card">
                 <img
                   :src="imageFor(item)"
                   class="artifact-img"
                   alt=""
+                  referrerpolicy="no-referrer"
                   @error="onImgError($event, item)"
                 >
                 <div class="artifact-info">
@@ -116,7 +117,7 @@ import {
 } from '@/api/search'
 import { exportToCsv, exportToJson } from '@/utils/export'
 import { MOCK_ARTIFACTS } from '@/utils/mockArtifacts'
-import { getArtifactImageUrl } from '@/utils/artifactPlaceholder'
+import { getArtifactImageUrl, normalizeExternalImageUrl } from '@/utils/artifactPlaceholder'
 import { ElMessage } from 'element-plus'
 
 export default {
@@ -263,6 +264,20 @@ export default {
       return getArtifactImageUrl(item)
     },
     onImgError (e, item) {
+      const raw = (item?.img_url || '').trim()
+      if (raw && /^https?:\/\//i.test(raw)) {
+        if (!e.target.dataset.triedProxy) {
+          e.target.dataset.triedProxy = '1'
+          e.target.src = normalizeExternalImageUrl(raw)
+          return
+        }
+        if (!e.target.dataset.triedDirect) {
+          e.target.dataset.triedDirect = '1'
+          e.target.src = raw
+          return
+        }
+      }
+      e.target.onerror = null
       e.target.src = getArtifactImageUrl({ ...item, img_url: '' })
     }
   }

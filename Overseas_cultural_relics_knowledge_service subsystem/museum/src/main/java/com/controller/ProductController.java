@@ -32,6 +32,26 @@ public class ProductController extends BaseController{
     private ICommentService iCommentService;
     @Autowired
     private CollectService collectService;
+    @Autowired
+    private com.service.Neo4jArtifactSearchService neo4jArtifactSearchService;
+
+    @RequestMapping("/detailByObjectId")//Neo4j 文物详情（按 objectId）
+    public JsonResult<Map<String, Object>> findByObjectId(@RequestBody Map map){
+        JsonResult<Map<String, Object>> result = new JsonResult<>();
+        Object oid = map.get("objectId");
+        Map<String, Object> detail = neo4jArtifactSearchService
+                .findDetailByObjectId(oid == null ? null : String.valueOf(oid));
+        if (detail == null) {
+            result.setState(6000);
+            result.setMessage("抱歉，您查询的文物不存在！");
+            return result;
+        }
+        result.setData(detail);
+        result.setState(200);
+        result.setMessage("找到以下内容：");
+        return result;
+    }
+
     @RequestMapping("/searchById")//文物详情页面
     public JsonResult<ProductView> findById(@RequestBody Map map){
         JsonResult<ProductView> result = new JsonResult<ProductView>();
