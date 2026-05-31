@@ -5,7 +5,8 @@
     <div class="page-container">
       <div class="page-header">
         <h1>知识图谱</h1>
-        <p>探索文物、博物馆与朝代的关联关系</p>
+        <p>探索文物、博物馆与朝代的关联关系（演示模式：展示 {{ demoLimit }} 件文物及其关联）</p>
+        <p v-if="demoHint" class="demo-hint">{{ demoHint }}</p>
       </div>
 
       <div class="graph-container">
@@ -70,7 +71,7 @@
               <circle
                 cx="0"
                 cy="0"
-                r="18"
+                :r="node.type === '文物' ? 20 : 16"
                 :fill="`url(#${getNodeGradient(node.type)})`"
                 stroke="rgba(255,255,255,0.9)"
                 stroke-width="1.5"
@@ -93,15 +94,15 @@
               </text>
               <text
                 x="0"
-                y="35"
+                y="38"
                 text-anchor="middle"
-                font-size="11"
-                fill="white"
+                font-size="10"
+                fill="rgba(255,255,255,0.92)"
                 font-weight="500"
                 pointer-events="none"
                 style="user-select: none; -webkit-user-select: none;"
               >
-                {{ node.label }}
+                {{ node.label && node.label.length > 10 ? node.label.slice(0, 10) + '…' : node.label }}
               </text>
             </g>
           </g>
@@ -155,6 +156,7 @@
 import { ref, onMounted } from 'vue'
 import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
+import { getApiRoot } from '@/config/api'
 import kgData from '../../assets/knowledge_graph.json'
 
 export default {
@@ -175,6 +177,8 @@ export default {
     const isNodeDragging = ref(false)
     const nodeDragStart = ref({ x: 0, y: 0, nodeIndex: -1 })
     const selectedNode = ref(null)
+    const demoLimit = ref(25)
+    const demoHint = ref('')
 
     const getNodeGradient = (type) => {
       const gradients = {
@@ -306,11 +310,47 @@ export default {
       selectedNode.value = null
     }
 
+    const layoutNodes = (nodeList, linkList) => {
+      const width = 900
+      const height = 520
+      const relics = nodeList.filter(n => n.type === '文物')
+      const museums = nodeList.filter(n => n.type === '博物馆')
+      const periods = nodeList.filter(n => n.type === '朝代')
+      const cx = width / 2
+      const cy = height / 2
+
+      relics.forEach((node, i) => {
+        const angle = (2 * Math.PI * i) / Math.max(relics.length, 1)
+        const r = Math.min(180, 70 + relics.length * 4)
+        node.x = cx + r * Math.cos(angle)
+        node.y = cy + r * Math.sin(angle)
+      })
+      museums.forEach((node, i) => {
+        const angle = Math.PI + (Math.PI * i) / Math.max(museums.length, 1)
+        node.x = cx + 260 * Math.cos(angle)
+        node.y = cy + 200 * Math.sin(angle)
+      })
+      periods.forEach((node, i) => {
+        const angle = (Math.PI * i) / Math.max(periods.length, 1)
+        node.x = cx + 260 * Math.cos(angle)
+        node.y = cy - 200 * Math.sin(angle)
+      })
+
+      // 未分类节点兜底
+      nodeList.forEach((node, i) => {
+        if (node.x == null || node.y == null) {
+          node.x = 120 + (i % 8) * 90
+          node.y = 120 + Math.floor(i / 8) * 70
+        }
+      })
+      return { nodeList, linkList, width, height }
+    }
+
     // 从后端API获取数据
     const fetchFromAPI = async () => {
       try {
         console.log('尝试从后端API获取知识图谱数据...')
-        const response = await fetch('http://localhost:8085/api/v1/data/knowledge-graph?limit=30')
+        const response = await fetch(`${getApiRoot()}/api/v1/data/knowledge-graph?limit=${demoLimit.value}`)
         
         if (!response.ok) {
           throw new Error(`API响应错误: ${response.status}`)
@@ -325,18 +365,16 @@ export default {
           const apiNodes = result.data.nodes.map(node => ({
             id: node.id,
             type: node.type,
-            label: node.label,
-            x: node.x || Math.random() * 600 + 100,
-            y: node.y || Math.random() * 400 + 100
+            label: node.label
           }))
-          
           const apiLinks = result.data.links.map(link => ({
             source: link.source,
             target: link.target,
             relationType: link.relationType
           }))
-          
-          return { nodes: apiNodes, links: apiLinks }
+          const laid = layoutNodes(apiNodes, apiLinks)
+          demoHint.value = `已从后端加载演示子图：${apiNodes.length} 个节点、${apiLinks.length} 条关系`
+          return { nodes: laid.nodeList, links: laid.linkList }
         }
         
         throw new Error('后端返回数据为空')
@@ -357,12 +395,20 @@ export default {
         nodes.value = apiData.nodes
         links.value = apiData.links
       } else {
-        // 2. 后端不可用时，使用本地静态JSON
         console.log('使用本地Mock数据')
-        nodes.value = kgData.nodes
-        links.value = kgData.edges
+        const localNodes = (kgData.nodes || []).slice(0, 40)
+        const localLinks = (kgData.edges || []).filter(
+          l => localNodes.some(n => n.id === l.source) && localNodes.some(n => n.id === l.target)
+        )
+        const laid = layoutNodes(localNodes, localLinks)
+        nodes.value = laid.nodeList
+        links.value = laid.linkList
+        demoHint.value = '后端不可用，已使用本地精简示例数据'
       }
-      
+
+      scale.value = 0.85
+      offsetX.value = 20
+      offsetY.value = 10
       loading.value = false
       console.log('Loaded', nodes.value.length, 'nodes and', links.value.length, 'edges')
     }
@@ -380,6 +426,8 @@ export default {
       offsetY,
       isDragging,
       selectedNode,
+      demoLimit,
+      demoHint,
       getNodeGradient,
       getNodeIcon,
       getLinkColor,
@@ -432,6 +480,12 @@ export default {
   color: #666;
   font-size: 14px;
   letter-spacing: 1px;
+}
+
+.demo-hint {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #8b4513;
 }
 
 .graph-container {

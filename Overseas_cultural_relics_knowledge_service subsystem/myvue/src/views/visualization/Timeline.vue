@@ -43,7 +43,7 @@
               class="relic-card"
               @click="showRelicDetail(relic)"
             >
-              <img :src="relic.image" :alt="relic.name" class="relic-image">
+              <img :src="imageFor(relic)" :alt="relic.name" class="relic-image" referrerpolicy="no-referrer" @error="onImgError($event, relic)">
               <div class="relic-info">
                 <h4>{{ relic.name }}</h4>
                 <p class="relic-type">{{ relic.type }}</p>
@@ -65,9 +65,9 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
 import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
+import { getArtifactImageUrl, normalizeExternalImageUrl } from '@/utils/artifactPlaceholder'
 
 export default {
   name: 'Timeline',
@@ -200,21 +200,25 @@ export default {
       timelineData.value = [...mockData]
     }
 
-    const refreshData = async () => {
+    // 时间轴展示策展精选文物（不在海外馆藏数据集中），统一用类型占位图，保证图片稳定可见
+    const imageFor = (relic) => {
+      const url = relic && relic.image ? String(relic.image) : ''
+      if (url && /^https?:\/\//i.test(url) && !/neeko-copilot\.bytedance\.net|example\.com/i.test(url)) {
+        return normalizeExternalImageUrl(url)
+      }
+      return getArtifactImageUrl({ object_name: relic.name, cat1: relic.type, cat3: relic.type })
+    }
+
+    const onImgError = (e, relic) => {
+      e.target.onerror = null
+      e.target.src = getArtifactImageUrl({ object_name: relic.name, cat1: relic.type, cat3: relic.type })
+    }
+
+    const refreshData = () => {
       isLoading.value = true
-      try {
-        const response = await axios.get('http://localhost:8085/api/v1/data/timeline')
-        if (response.data && response.data.code === 200 && response.data.data) {
-          timelineData.value = [...response.data.data]
-          if (timelineData.value.length > 0 && selectedPeriod.value >= timelineData.value.length) {
-            selectedPeriod.value = 0
-          }
-        } else {
-          loadMockData()
-        }
-      } catch (error) {
-        console.error('Failed to fetch timeline data:', error)
-        loadMockData()
+      loadMockData()
+      if (selectedPeriod.value >= timelineData.value.length) {
+        selectedPeriod.value = 0
       }
       isLoading.value = false
     }
@@ -235,6 +239,8 @@ export default {
       selectPeriod,
       refreshData,
       showRelicDetail,
+      imageFor,
+      onImgError,
       isLoading
     }
   }

@@ -37,6 +37,10 @@ export function parseSearchResponse (response) {
   if (body.state === 200 && Array.isArray(body.data)) {
     return { list: body.data, message: body.message || '' }
   }
+  // 无结果时后端可能返回 4000，按空列表处理，避免误走演示数据
+  if (body.state === 4000) {
+    return { list: [], message: body.message || '未查询到相关文物' }
+  }
   const err = new Error(body.message || '未查询到相关文物')
   err.code = body.state
   throw err

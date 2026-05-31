@@ -30,12 +30,11 @@ import MainHeader from '../../components/MainHeader/MainHeader.vue'
 import MainFooter from '../../components/MainFooter/MainFooter.vue'
 
 const MATERIALS = [
-  { label: '石器', value: 'Stoneware' },
-  { label: '釉面', value: 'Glazed' },
-  { label: '瓷', value: 'Porcelain' },
-  { label: '玉', value: 'Jade' },
-  { label: '陶器', value: 'Earthenware' },
-  { label: '未上釉', value: 'Unglazed' }
+  { label: '瓷', value: '瓷' },
+  { label: '陶瓷', value: '陶瓷' },
+  { label: '玉', value: '玉' },
+  { label: '青铜', value: '青铜' },
+  { label: '纸', value: '纸' }
 ]
 
 export default {

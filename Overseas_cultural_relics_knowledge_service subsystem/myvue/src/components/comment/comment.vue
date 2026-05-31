@@ -9,6 +9,15 @@
         <span class="author-name">{{ item.name }}</span>
         <span class="author-time">{{ item.time }}</span>
       </div>
+      <div class="comment-actions">
+        <span 
+          v-if="item.name === storage.getItem('username')" 
+          class="delete-btn" 
+          @click="deleteComment(i)"
+        >
+          删除
+        </span>
+      </div>
       <div class="talk-box">
         <p>
           <span class="reply">{{ item.comment }}</span>
@@ -160,6 +169,24 @@
       onDivInput: function (e) {
         this.replyComment = e.target.innerHTML
       },
+      deleteComment (index) {
+        this.$confirm('确定要删除这条评论吗?', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          this.comments.splice(index, 1)
+          this.$message({
+            type: 'success',
+            message: '删除成功!'
+          })
+        }).catch(() => {
+          this.$message({
+            type: 'info',
+            message: '已取消删除'
+          })
+        })
+      },
       dateStr (date) {
         // 获取js 时间戳
         var time = new Date().getTime()
@@ -261,6 +288,20 @@
   }
   .reply-father {
     padding: 10px;
+
+    .comment-actions {
+      float: right;
+      .delete-btn {
+        color: #f56c6c;
+        cursor: pointer;
+        font-size: 14px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        &:hover {
+          background-color: #fef0f0;
+        }
+      }
+    }
 
     .header-img {
       display: inline-block;

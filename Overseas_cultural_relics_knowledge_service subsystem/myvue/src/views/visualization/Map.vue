@@ -97,6 +97,7 @@
 <script>
 import { ref, reactive, computed, onMounted } from 'vue'
 import axios from 'axios'
+import { getApiRoot } from '@/config/api'
 import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
 
@@ -144,7 +145,7 @@ export default {
     const fetchLocations = async () => {
       isLoading.value = true
       try {
-        const response = await axios.get('http://localhost:8085/api/v1/data/geo-map')
+        const response = await axios.get(`${getApiRoot()}/api/v1/data/geo-map`)
         if (response.data && response.data.data && response.data.data.length > 0) {
           mapLocations.value = response.data.data.map(loc => {
             if (loc.lat !== undefined && loc.lng !== undefined) {

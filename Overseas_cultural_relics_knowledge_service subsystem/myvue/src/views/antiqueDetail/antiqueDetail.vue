@@ -11,8 +11,17 @@
         <br>
         <span>文物时期：{{form1.time_period}}</span>
         <br>
+        <span v-if="form1.material">文物材质：{{form1.material}}</span>
+        <br v-if="form1.material">
+        <span v-if="form1.type">文物品类：{{form1.type}}</span>
+        <br v-if="form1.type">
+        <span v-if="form1.museum">收藏博物馆：{{form1.museum}}</span>
+        <br v-if="form1.museum">
+        <span v-if="form1.accession_number">馆藏编号：{{form1.accession_number}}</span>
+        <br v-if="form1.accession_number">
+        <p v-if="form1.description" class="detail-desc">文物简介：{{form1.description}}</p>
         <span>文物详情请访问：
-          <a v-bind:herf="form1.url">原地址</a>
+          <a :href="form1.url || '#'" target="_blank" rel="noreferrer">原地址</a>
         </span>
         <div class="bottom clearfix">
           <el-button type="primary" @click="changeButton" v-if="!isStared">
@@ -77,7 +86,9 @@
 <script>
 import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
-import axios from 'axios'
+import request from '@/api/request'
+import { getApiRoot } from '@/config/api'
+import { normalizeExternalImageUrl } from '@/utils/artifactPlaceholder'
 var storage = window.localStorage
 export default {
   name: 'antiqueDetail',
@@ -93,7 +104,7 @@ export default {
         url: 'www.baidu.com'
       },
       // 后端服务器地址，用于拼接相对路径图片
-      baseUrl: 'http://localhost:8085',
+      baseUrl: getApiRoot(),
       btnShow: false,
       replyComment: '',
       myName: 'GQS',
@@ -131,9 +142,9 @@ export default {
         return '/timg.jpeg'
       }
       
-      // 如果是有效的http URL，直接返回
+      // 如果是有效的http URL，对防盗链域名走代理后返回
       if (url.startsWith('http')) {
-        return url
+        return normalizeExternalImageUrl(url)
       }
       
       // 如果是后端返回的相对路径（如 /upload/xxx.jpg），拼接后端地址
@@ -155,27 +166,41 @@ export default {
   },
   methods: {
     pageInit () {
-      this.form.rid = this.$route.query.id
+      const objectId = this.$route.query.objectId
+      this.form.rid = objectId || this.$route.query.id
       this.form.uid = storage.getItem('username')
       this.commentForm.uid = storage.getItem('username')
       this.commentForm.rid = this.form.rid
-      console.log(this.form)
-      axios.post('http://localhost:8080/search/searchById', this.form
-      ).then((response) => {
-        this.form1 = response.data.data
-        console.log(this.form1)
-        this.isStared = this.form1.if_collect
-      })
-        .catch(function (error) {
+      if (!objectId) {
+        this.$message && this.$message.warning('缺少文物标识，无法加载详情')
+        return
+      }
+      request.post('/search/detailByObjectId', { objectId })
+        .then((response) => {
+          if (response.data.state === 200 && response.data.data) {
+            this.form1 = { ...this.form1, ...response.data.data }
+            this.isStared = this.form1.if_collect || 0
+          } else {
+            this.$message && this.$message.warning(response.data.message || '未找到该文物')
+          }
+        })
+        .catch((error) => {
           console.log(error)
         })
     },
     changeButton () {
-      this.form2.rid = this.$route.query.id
       this.form2.rid = this.form.rid
       this.form2.uid = storage.getItem('username')
+      if (!this.form2.uid) {
+        this.$message({ showClose: true, type: 'warning', message: '请先登录后再收藏' })
+        return
+      }
+      if (!/^\d+$/.test(String(this.form2.rid))) {
+        this.$message({ showClose: true, type: 'info', message: '该文物暂不支持收藏' })
+        return
+      }
       if (this.form1.if_collect === 1) {
-        axios.post('http://localhost:8080/user_admin/deleteCollect', this.form2// 注意数据是直接保存到json对象
+        request.post('/user_admin/deleteCollect', this.form2
         ).then((response) => {
           if (response.data.state === 200) {
             this.$message({
@@ -191,7 +216,7 @@ export default {
           console.log(error)
         })
       } else {
-        axios.post('http://localhost:8080/search/searchById/collect', this.form2// 注意数据是直接保存到json对象
+        request.post('/search/searchById/collect', this.form2
         ).then((response) => {
           if (response.data.state === 200) {
             this.$message({
@@ -237,6 +262,10 @@ export default {
             type: 'warning',
             message: '评论不能为空'
           })
+        } else if (!this.commentForm.uid) {
+          this.$message({ showClose: true, type: 'warning', message: '请先登录后再评论' })
+        } else if (!/^\d+$/.test(String(this.commentForm.rid))) {
+          this.$message({ showClose: true, type: 'info', message: '该文物暂不支持评论' })
         } else {
           let a = {}
           let input = document.getElementById('replyInput')
@@ -250,7 +279,7 @@ export default {
           this.commentForm.content = a.comment
           this.replyComment = ''
           input.innerHTML = ''
-          axios.post('http://localhost:8080/search/searchById/comment', this.commentForm// 注意数据是直接保存到json对象
+          request.post('/search/searchById/comment', this.commentForm
           ).then((response) => {
             if (response.data.state === 200) {
               alert('评论成功')
@@ -308,6 +337,14 @@ export default {
   .image{
     width: 300px;
     height: 300px;
+    object-fit: cover;
+  }
+  .detail-desc{
+    max-width: 760px;
+    line-height: 1.8;
+    color: #555;
+    margin: 8px 0;
+    text-align: justify;
   }
 .my-reply {
   padding: 10px;

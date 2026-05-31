@@ -33,10 +33,9 @@
 </template>
 
 <script>
-import axios from 'axios'
 import MainFooter from '../../components/MainFooter/MainFooter'
 import MainHeader from '../../components/MainHeader/MainHeader'
-import defaultAvatar from '../../assets/timg.jpeg'
+import { register, parseRegisterResponse } from '@/api/user'
 
 export default {
   name: 'Register',
@@ -95,53 +94,27 @@ export default {
       }
 
       try {
-        const response = await axios.post('/api/v1/users', {
+        const response = await register({
           username: this.form.username,
           password: this.form.password,
-          userName: this.form.username,
-          sex: this.form.sex,
-          tele: this.form.tele,
-          avatar: '',
-          bio: ''
+          nickname: this.form.username,
+          email: this.form.email || '',
+          phone: this.form.tele || '',
+          roleIds: ['aaac088a-6318-45f5-999f-9e8958d1f8bb'],
+          role: 'ADMIN'
         })
-
-        if (response.data.code === 200) {
-          this.$message.success('注册成功')
-          setTimeout(() => {
-            this.$router.push('/login')
-          }, 1000)
-        } else {
-          this.$message.error(response.data.message || '注册失败')
-        }
-      } catch (error) {
-        console.error('注册失败:', error)
-        const users = JSON.parse(localStorage.getItem('users') || '[]')
-        const exists = users.find(u => u.username === this.form.username)
-
-        if (exists) {
-          this.$message.error('用户名已存在')
-          return
-        }
-
-        const newUser = {
-          id: Date.now(),
-          username: this.form.username,
-          password: this.form.password,
-          user_name: this.form.username,
-          sex: this.form.sex,
-          tele: this.form.tele,
-          avatar: defaultAvatar,
-          bio: '',
-          user_login: 1
-        }
-
-        users.push(newUser)
-        localStorage.setItem('users', JSON.stringify(users))
-
-        this.$message.warning('使用本地数据注册成功')
+        const data = parseRegisterResponse(response)
+        this.$message.success(`注册成功！用户ID为：${data.userId}`)
         setTimeout(() => {
           this.$router.push('/login')
         }, 1000)
+      } catch (error) {
+        console.error('注册失败:', error)
+        if (error.code === 6000) {
+          this.$message.error('用户名已存在')
+        } else {
+          this.$message.error(error.message || '注册失败')
+        }
       }
     },
     turn_to_login () {

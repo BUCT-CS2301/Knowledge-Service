@@ -6,7 +6,7 @@
       <div class="carousel">
         <el-carousel :interval="4000" type="card" height="500px">
           <el-carousel-item v-for="(item, index) in carouselImages" :key="index">
-            <img :src="item" class="carousel-img" alt="">
+            <img :src="item" class="carousel-img" alt="" @click="goToMuseum">
           </el-carousel-item>
         </el-carousel>
       </div>
@@ -121,7 +121,7 @@
 <script>
 import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
-import axios from 'axios'
+import request from '@/api/request'
 import carouselImg1 from '@/assets/index/1.png'
 import carouselImg2 from '@/assets/index/2.png'
 import carouselImg3 from '@/assets/index/3.png'
@@ -176,65 +176,21 @@ export default {
         window.open(news.url, '_blank')
       }
     },
-    // 获取推荐文物列表
-    async fetchRecommendedRelics () {
-      try {
-        const accessToken = localStorage.getItem('accessToken')
-        const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
-        const response = await axios.get('/api/v1/data/relics', {
-          params: {
-            page: 1,
-            pageSize: 8
-          },
-          headers: headers,
-          timeout: 3000  // 添加3秒超时，避免长时间等待
-        })
-        if (response.data.code === 200) {
-          // 将后端数据映射到前端需要的格式
-          this.recommendedRelics = response.data.data.records.map(relic => ({
-            id: relic.objectId,
-            name: relic.title,
-            image: relic.imageUrl || 'https://via.placeholder.com/300x200?text=No+Image',
-            description: relic.description || '暂无描述',
-            museum: relic.museumId || '未知博物馆',
-            period: relic.period || '未知年代'
-          }))
-          console.log('成功从后端获取文物数据:', this.recommendedRelics.length, '件')
-        }
-      } catch (error) {
-        console.error('获取推荐文物失败:', error)
-        // 后端服务不可用时，静默使用默认数据
-        this.recommendedRelics = this.getDefaultRelics()
-      }
+    // 跳转到国家博物馆
+    goToMuseum () {
+      window.open('https://www.chnmuseum.cn/', '_blank')
     },
-    // 获取热门博物馆列表
+    // 获取推荐文物列表 - 优先使用默认数据
+    async fetchRecommendedRelics () {
+      // 优先使用默认数据，避免后端数据质量问题
+      this.recommendedRelics = this.getDefaultRelics()
+      console.log('使用默认文物数据')
+    },
+    // 获取热门博物馆列表 - 优先使用默认数据
     async fetchHotMuseums () {
-      try {
-        const accessToken = localStorage.getItem('accessToken')
-        const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
-        const response = await axios.get('/api/v1/data/museums', {
-          params: {
-            page: 1,
-            pageSize: 4
-          },
-          headers: headers,
-          timeout: 3000  // 添加3秒超时，避免长时间等待
-        })
-        if (response.data.code === 200) {
-          // 将后端数据映射到前端需要的格式
-          this.hotMuseums = response.data.data.records.map(museum => ({
-            id: museum.objectId,
-            name: museum.nameCn || museum.name,
-            location: museum.location || '未知地点',
-            image: museum.imageUrl || 'https://via.placeholder.com/300x200?text=No+Image'
-          }))
-          console.log('成功从后端获取博物馆数据:', this.hotMuseums.length, '个')
-        }
-      } catch (error) {
-        console.error('获取热门博物馆失败:', error)
-        // 后端服务不可用时，静默使用默认数据
-        this.hotMuseums = this.getDefaultMuseums()
-      }
+      // 优先使用默认数据，避免后端数据质量问题
+      this.hotMuseums = this.getDefaultMuseums()
+      console.log('使用默认博物馆数据')
     },
     // 默认文物数据（使用数据库组爬取的真实数据）
     getDefaultRelics () {
@@ -280,10 +236,10 @@ export default {
     // 默认博物馆数据（使用数据库组爬取的真实博物馆信息）
     getDefaultMuseums () {
       return [
-        { id: 1, name: 'The Cleveland Museum of Art', location: 'Cleveland, Ohio, United States', image: 'https://picsum.photos/seed/cleveland/300/200' },
-        { id: 2, name: 'The Nelson-Atkins Museum of Art', location: 'Kansas City, Missouri, United States', image: 'https://picsum.photos/seed/nelson/300/200' },
-        { id: 3, name: 'Penn Museum', location: 'Philadelphia, Pennsylvania, United States', image: 'https://picsum.photos/seed/penn/300/200' },
-        { id: 4, name: 'The British Museum', location: 'London, United Kingdom', image: 'https://picsum.photos/seed/british/300/200' }
+        { id: 1, name: 'The Cleveland Museum of Art', location: 'Cleveland, Ohio, United States', image: 'https://www.clevelandart.org/_next/image?url=https%3A%2F%2Fpiction.clevelandart.org%2Fcma%2Fump.di%3Fe%3D9E6CFCC906DC7FEF3F48FC49A1CCCBBE33EC3DFFE8480DB83458059717155D8D%26s%3D24247294%26se%3D399313166%26v%3D3%26f%3D%5Cd2570%5Cu350325704%5C1950.89_o3.jpg&w=3840&q=100' },
+        { id: 2, name: 'The Nelson-Atkins Museum of Art', location: 'Kansas City, Missouri, United States', image: 'https://ts1.tc.mm.bing.net/th/id/OIP-C.flTIrzDGzEJ-jM0b6o4BYgHaFc?w=193&h=142&c=8&rs=1&qlt=90&o=6&dpr=1.5&pid=3.1&rm=2' },
+        { id: 3, name: 'Penn Museum', location: 'Philadelphia, Pennsylvania, United States', image: 'https://ts4.tc.mm.bing.net/th/id/OIP-C.SCXWxeHGNJqqxW_9V8NqdQHaEK?cb=thfvnextfalcon&rs=1&pid=ImgDetMain&o=7&rm=3' },
+        { id: 4, name: 'The British Museum', location: 'London, United Kingdom', image: 'https://ts1.tc.mm.bing.net/th/id/OIP-C.hJ3c9Xyu7qqYu_NS3XrefQHaFj?w=193&h=145&c=8&rs=1&qlt=90&o=6&dpr=1.5&pid=3.1&rm=2' }
       ]
     },
     viewDetail (relic) {

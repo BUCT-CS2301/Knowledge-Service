@@ -19,16 +19,12 @@
           <span class="value">{{userInfo.user_name}}</span>
         </el-descriptions-item>
 
-        <el-descriptions-item label="性别">
-          <span class="value">{{userInfo.sex || '未设置'}}</span>
-        </el-descriptions-item>
-
         <el-descriptions-item label="手机号">
           <span class="value">{{ userInfo.tele || '未设置' }}</span>
         </el-descriptions-item>
 
-        <el-descriptions-item label="个人简介">
-          <span class="value">{{ userInfo.bio || '未设置' }}</span>
+        <el-descriptions-item label="电子邮箱">
+          <span class="value">{{ userInfo.email || '未设置' }}</span>
         </el-descriptions-item>
       </el-descriptions>
     </div>
@@ -45,16 +41,15 @@
 </template>
 
 <script>
-import axios from 'axios'
+import request from '@/api/request'
 var storage = window.localStorage
 export default {
   data () {
     return {
       userInfo: {
         user_name: '未登录',
-        sex: '',
         tele: '',
-        bio: ''
+        email: ''
       }
     }
   },
@@ -62,16 +57,17 @@ export default {
     async pageInit () {
       const accessToken = storage.getItem('accessToken')
       const username = storage.getItem('username')
+      const objectId = storage.getItem('objectId')
 
       if (!username) {
         this.userInfo.user_name = '游客'
         return
       }
 
-      // 优先尝试从后端获取用户信息
-      if (accessToken) {
+      // 优先尝试从后端获取用户详细信息
+      if (accessToken && objectId) {
         try {
-          const response = await axios.get('/api/v1/auth/current-user', {
+          const response = await request.get(`/api/v1/users/${objectId}`, {
             headers: {
               Authorization: `Bearer ${accessToken}`
             }
@@ -80,10 +76,55 @@ export default {
           if (response.data.code === 200) {
             const data = response.data.data
             this.userInfo = {
-              user_name: data.userName || data.username || '未设置',
-              sex: data.sex || '',
-              tele: data.tele || '',
-              bio: data.bio || ''
+              user_name: data.nickname || data.username || '未设置',
+              tele: data.phone || data.tele || '',
+              email: data.email || ''
+            }
+            return
+          }
+        } catch (error) {
+          console.error('获取用户信息失败:', error)
+        }
+      }
+
+      // 如果没有objectId，先获取基础信息
+      if (accessToken) {
+        try {
+          const response = await request.get('/api/v1/auth/current-user', {
+            headers: {
+              Authorization: `Bearer ${accessToken}`
+            }
+          })
+
+          if (response.data.code === 200) {
+            const data = response.data.data
+            localStorage.setItem('objectId', data.objectId)
+            
+            // 尝试用获取到的objectId获取详细信息
+            try {
+              const detailResponse = await request.get(`/api/v1/users/${data.objectId}`, {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`
+                }
+              })
+              if (detailResponse.data.code === 200) {
+                const detailData = detailResponse.data.data
+                this.userInfo = {
+                  user_name: detailData.nickname || detailData.username || '未设置',
+                  tele: detailData.phone || detailData.tele || '',
+                  email: detailData.email || ''
+                }
+                return
+              }
+            } catch (detailError) {
+              console.error('获取用户详细信息失败:', detailError)
+            }
+            
+            // 如果获取详细信息失败，使用基础信息
+            this.userInfo = {
+              user_name: data.nickname || data.username || '未设置',
+              tele: '',
+              email: ''
             }
             return
           }
@@ -99,9 +140,8 @@ export default {
       if (user) {
         this.userInfo = {
           user_name: user.user_name || username,
-          sex: user.sex,
           tele: user.tele,
-          bio: user.bio
+          email: user.email
         }
       } else {
         this.userInfo.user_name = username || '游客'

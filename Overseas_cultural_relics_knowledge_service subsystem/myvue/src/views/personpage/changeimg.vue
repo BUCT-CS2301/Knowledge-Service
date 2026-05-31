@@ -13,8 +13,9 @@
         <el-upload
           class="avatar-uploader"
           :show-file-list="false"
-          :on-success="handleAvatarSuccess"
-          :before-upload="beforeAvatarUpload">
+          :on-change="handleFileChange"
+          :auto-upload="false"
+          :limit="1">
           
           <div class="avatar-preview">
             <img :src="imageUrl || defaultAvatar" class="avatar-img">
@@ -59,33 +60,40 @@ export default {
         this.imageUrl = user.avatar
       }
     },
-    handleAvatarSuccess (res, file) {
-      this.imageUrl = URL.createObjectURL(file.raw)
-      
-      const username = localStorage.getItem('username')
-      const users = JSON.parse(localStorage.getItem('users') || '[]')
-      const index = users.findIndex(u => u.username === username)
-      
-      if (index !== -1) {
-        users[index].avatar = this.imageUrl
-        localStorage.setItem('users', JSON.stringify(users))
-      }
-      
-      this.$message.success('头像上传成功!')
-    },
-    beforeAvatarUpload (file) {
-      const isJPG = file.type === 'image/jpeg'
-      const isPNG = file.type === 'image/png'
-      const isLt2M = file.size / 1024 / 1024 < 2
+    handleFileChange (file) {
+      const isJPG = file.raw.type === 'image/jpeg'
+      const isPNG = file.raw.type === 'image/png'
+      const isLt2M = file.raw.size / 1024 / 1024 < 2
       
       if (!isJPG && !isPNG) {
         this.$message.error('上传头像图片只能是 JPG 或 PNG 格式!')
+        return
       }
       if (!isLt2M) {
         this.$message.error('上传头像图片大小不能超过 2MB!')
+        return
       }
       
-      return (isJPG || isPNG) && isLt2M
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        this.imageUrl = e.target.result
+        
+        const username = localStorage.getItem('username')
+        const users = JSON.parse(localStorage.getItem('users') || '[]')
+        const index = users.findIndex(u => u.username === username)
+        
+        if (index !== -1) {
+          users[index].avatar = this.imageUrl
+          localStorage.setItem('users', JSON.stringify(users))
+        } else {
+          const newUser = { username: username, avatar: this.imageUrl }
+          users.push(newUser)
+          localStorage.setItem('users', JSON.stringify(users))
+        }
+        
+        this.$message.success('头像上传成功!')
+      }
+      reader.readAsDataURL(file.raw)
     }
   }
 }

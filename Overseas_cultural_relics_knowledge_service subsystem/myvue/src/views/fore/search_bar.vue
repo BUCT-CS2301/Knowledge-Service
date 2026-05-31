@@ -75,45 +75,32 @@ export default {
         v_4: ''
       },
       usageOptions: [
-        { label: '金属', value: 'Metalwork' },
-        { label: '陶瓷', value: 'Ceramic' },
-        { label: '珠宝', value: 'Jewelry and Ornament' },
-        { label: '拓印', value: 'Rubbing' },
-        { label: '书法', value: 'Calligraphy' },
-        { label: '雕塑', value: 'Sculpture' },
-        { label: '绘画', value: 'Painting' },
-        { label: '工具', value: 'Tool and Equipment' },
-        { label: '玉', value: 'Jade' },
-        { label: '兵器', value: 'Weapon and Armament' }
+        { label: '陶瓷', value: '陶瓷' },
+        { label: '绘画', value: '绘画' },
+        { label: '雕塑', value: '雕塑' },
+        { label: '打印', value: '打印' },
+        { label: '亚洲', value: '亚洲' }
       ],
       materialOptions: [
-        { label: '石器', value: 'Stoneware' },
-        { label: '釉面', value: 'Glazed' },
-        { label: '瓷', value: 'Porcelain' },
-        { label: '玉', value: 'Jade' },
-        { label: '陶器', value: 'Earthenware' },
-        { label: '未上釉', value: 'Unglazed' }
+        { label: '瓷', value: '瓷' },
+        { label: '陶瓷', value: '陶瓷' },
+        { label: '玉', value: '玉' },
+        { label: '青铜', value: '青铜' },
+        { label: '纸', value: '纸' }
       ],
       dynastyOptions: [
-        { label: '唐', value: 'Tang Dynasty' },
-        { label: '宋', value: 'Song Dynasty' },
-        { label: '元', value: 'Yuan Dynasty' },
-        { label: '明', value: 'Ming Dynasty' },
-        { label: '清', value: 'Qing Dynasty' },
-        { label: '北魏', value: 'Northern Wei Dynasty' },
-        { label: '周', value: 'Zhou Dynasty' },
-        { label: '东周', value: 'Eastern Zhou Dynasty' },
-        { label: '南宋', value: 'Northern Song' },
-        { label: '东汉', value: 'Eastern Han Dynasty' },
-        { label: '西汉', value: 'Western Han Dynasty' },
-        { label: '中商', value: 'Shang Dynasty' }
+        { label: '唐', value: '唐' },
+        { label: '宋', value: '宋' },
+        { label: '元', value: '元' },
+        { label: '明', value: '明' },
+        { label: '清', value: '清' },
+        { label: '汉', value: '汉' },
+        { label: '隋', value: '隋' }
       ],
       museumOptions: [
-        { label: '弗利尔美术馆', value: 'Freersackler' },
-        { label: '丹佛美术馆', value: 'Denver Art Museum' },
-        { label: '鲁宾艺术馆', value: 'Rubin Museum' },
-        { label: '亚洲协会及其博物馆', value: 'Asia Society Museum' },
-        { label: '大卫奥斯利艺术博物馆', value: 'David Owsley Museum of Art' }
+        { label: '克利夫兰艺术博物馆', value: '克利夫兰' },
+        { label: '尼尔森-阿特金斯艺术博物馆', value: '尼尔森' },
+        { label: '宾夕法尼亚大学考古与人类学博物馆', value: '宾夕法尼亚' }
       ]
     }
   },

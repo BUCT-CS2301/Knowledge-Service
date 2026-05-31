@@ -34,24 +34,6 @@
     </div>
 
     <div class="main-content">
-      <div class="recent-activity">
-        <h3 class="section-title">
-          <i class="el-icon-timer"></i>
-          最近动态
-        </h3>
-        <div class="activity-list">
-          <div class="activity-item" v-for="(activity, index) in recentActivities" :key="index">
-            <div class="activity-icon" :class="activity.type">
-              <i :class="activity.icon"></i>
-            </div>
-            <div class="activity-content">
-              <p class="activity-text">{{ activity.text }}</p>
-              <p class="activity-time">{{ activity.time }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div class="quick-stats">
         <h3 class="section-title">
           <i class="el-icon-info"></i>
@@ -79,7 +61,7 @@
 <script>
 var storage = window.localStorage
 import defaultAvatar from '../../assets/timg.jpeg'
-import axios from 'axios'
+import request from '@/api/request'
 
 export default {
   name: 'personpage_hello',
@@ -91,7 +73,9 @@ export default {
       commentsCount: 0,
       loginTime: '',
       onlineDuration: '0分钟',
-      recentActivities: []
+      totalOnlineMinutes: 0,
+      sessionStartTime: 0,
+      timerInterval: null
     }
   },
   computed: {
@@ -110,90 +94,136 @@ export default {
   },
   methods: {
     async initData () {
+      const accessToken = storage.getItem('accessToken')
       const username = storage.getItem('username')
+      
+      // 优先从 localStorage 读取本地头像
       const users = JSON.parse(storage.getItem('users') || '[]')
       const user = users.find(u => u.username === username)
-
-      if (user) {
-        this.username = user.user_name || username
-        this.userAvatar = user.avatar && user.avatar !== '' ? user.avatar : defaultAvatar
-      } else {
-        this.username = username || '用户'
+      
+      if (user && user.avatar && user.avatar !== '') {
+        this.userAvatar = user.avatar
       }
 
-      const userId = storage.getItem('user_id')
+      // 然后从后端获取用户信息
+      if (accessToken) {
+        try {
+          const response = await request.get('/api/v1/auth/current-user', {
+            headers: {
+              Authorization: `Bearer ${accessToken}`
+            }
+          })
+
+          if (response.data.code === 200) {
+            const data = response.data.data
+            this.username = data.nickname || data.username || username || '用户'
+            // 只有当后端有头像且本地没有头像时，才使用后端头像
+            if (!this.userAvatar || this.userAvatar === defaultAvatar) {
+              if (data.avatar && data.avatar !== '') {
+                this.userAvatar = data.avatar
+              }
+            }
+          }
+        } catch (error) {
+          console.error('获取用户信息失败:', error)
+        }
+      }
+
+      // 如果 localStorage 和后端都没有头像，才使用默认头像
+      if (!this.username || this.username === '用户') {
+        if (user) {
+          this.username = user.user_name || username
+        } else {
+          this.username = username || '用户'
+        }
+      }
+
+      const userId = storage.getItem('objectId') || storage.getItem('user_id')
       const collections = JSON.parse(storage.getItem('collections') || '[]')
       const comments = JSON.parse(storage.getItem('comments') || '[]')
 
       this.collectionsCount = collections.filter(c => c.userId === userId).length
       this.commentsCount = comments.filter(c => c.userId === userId).length
 
-      this.loginTime = new Date().toLocaleString('zh-CN')
-
-      await this.fetchUserLogs(userId)
-    },
-    async fetchUserLogs (userId) {
-      const accessToken = storage.getItem('accessToken')
-      if (!userId) {
-        this.setDefaultActivities()
-        return
+      // 从 localStorage 读取登录时间，如果没有则记录当前时间
+      if (user && user.loginTime) {
+        this.loginTime = user.loginTime
+      } else {
+        this.loginTime = new Date().toLocaleString('zh-CN')
+        // 保存登录时间到 localStorage
+        this.saveLoginTime()
       }
-
-      try {
-        const response = await axios.get(`/api/v1/users/${userId}/logs?page=1&pageSize=4`, {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`
-          }
-        })
-
-        if (response.data.code === 200 && response.data.data && response.data.data.length > 0) {
-          this.recentActivities = response.data.data.map(log => {
-            const typeMap = {
-              'collect': { icon: 'el-icon-star-on', type: 'collect' },
-              'comment': { icon: 'el-icon-message', type: 'comment' },
-              'visit': { icon: 'el-icon-eye', type: 'visit' },
-              'update': { icon: 'el-icon-edit', type: 'update' },
-              'login': { icon: 'el-icon-user', type: 'update' }
-            }
-            const info = typeMap[log.type] || { icon: 'el-icon-info', type: 'update' }
-            return {
-              type: info.type,
-              icon: info.icon,
-              text: log.description || log.action,
-              time: log.time || '刚刚'
-            }
-          })
-        } else {
-          this.setDefaultActivities()
-        }
-      } catch (error) {
-        console.log('获取用户日志失败:', error)
-        this.setDefaultActivities()
-      }
-    },
-    setDefaultActivities () {
-      this.recentActivities = [
-        { type: 'collect', icon: 'el-icon-star-on', text: '收藏了青铜鼎', time: '5分钟前' },
-        { type: 'comment', icon: 'el-icon-message', text: '评论了青花瓷', time: '30分钟前' },
-        { type: 'visit', icon: 'el-icon-eye', text: '浏览了文物详情', time: '1小时前' },
-        { type: 'update', icon: 'el-icon-edit', text: '更新了个人资料', time: '2小时前' }
-      ]
+      
+      // 加载历史在线时长
+      this.loadOnlineDuration()
     },
     handleAvatarError () {
       this.userAvatar = defaultAvatar
     },
+    loadOnlineDuration () {
+      const username = storage.getItem('username')
+      const users = JSON.parse(storage.getItem('users') || '[]')
+      const user = users.find(u => u.username === username)
+      
+      if (user && user.onlineMinutes !== undefined) {
+        this.totalOnlineMinutes = user.onlineMinutes
+      } else {
+        this.totalOnlineMinutes = 0
+      }
+      
+      this.updateOnlineDurationDisplay()
+    },
     startOnlineTimer () {
-      let minutes = 0
-      setInterval(() => {
-        minutes++
-        if (minutes < 60) {
-          this.onlineDuration = `${minutes}分钟`
-        } else {
-          const hours = Math.floor(minutes / 60)
-          const mins = minutes % 60
-          this.onlineDuration = mins > 0 ? `${hours}小时${mins}分钟` : `${hours}小时`
-        }
+      // 记录本次会话开始时间
+      this.sessionStartTime = Date.now()
+      
+      // 每分钟更新一次
+      this.timerInterval = setInterval(() => {
+        this.totalOnlineMinutes++
+        this.updateOnlineDurationDisplay()
+        this.saveOnlineDuration()
       }, 60000)
+    },
+    updateOnlineDurationDisplay () {
+      if (this.totalOnlineMinutes < 60) {
+        this.onlineDuration = `${this.totalOnlineMinutes}分钟`
+      } else {
+        const hours = Math.floor(this.totalOnlineMinutes / 60)
+        const mins = this.totalOnlineMinutes % 60
+        this.onlineDuration = mins > 0 ? `${hours}小时${mins}分钟` : `${hours}小时`
+      }
+    },
+    saveOnlineDuration () {
+      const username = storage.getItem('username')
+      const users = JSON.parse(storage.getItem('users') || '[]')
+      const index = users.findIndex(u => u.username === username)
+      
+      if (index !== -1) {
+        users[index].onlineMinutes = this.totalOnlineMinutes
+      } else {
+        users.push({ username: username, onlineMinutes: this.totalOnlineMinutes })
+      }
+      
+      storage.setItem('users', JSON.stringify(users))
+    },
+    saveLoginTime () {
+      const username = storage.getItem('username')
+      const users = JSON.parse(storage.getItem('users') || '[]')
+      const index = users.findIndex(u => u.username === username)
+      
+      if (index !== -1) {
+        users[index].loginTime = this.loginTime
+      } else {
+        users.push({ username: username, loginTime: this.loginTime })
+      }
+      
+      storage.setItem('users', JSON.stringify(users))
+    },
+    beforeUnmount () {
+      // 页面关闭时清除定时器
+      if (this.timerInterval) {
+        clearInterval(this.timerInterval)
+      }
     }
   }
 }
@@ -318,66 +348,11 @@ export default {
   color: #333;
 }
 
-.recent-activity,
 .quick-stats {
   background: white;
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-}
-
-.activity-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.activity-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.activity-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 18px;
-}
-
-.activity-icon.collect {
-  background: linear-gradient(135deg, #FF6B6B, #FF8E53);
-}
-
-.activity-icon.comment {
-  background: linear-gradient(135deg, #4ECDC4, #44A08D);
-}
-
-.activity-icon.visit {
-  background: linear-gradient(135deg, #45B7D1, #2980B9);
-}
-
-.activity-icon.update {
-  background: linear-gradient(135deg, #9B59B6, #8E44AD);
-}
-
-.activity-content {
-  flex: 1;
-}
-
-.activity-text {
-  font-size: 14px;
-  color: #333;
-  margin: 0;
-}
-
-.activity-time {
-  font-size: 12px;
-  color: #999;
 }
 
 .info-list {

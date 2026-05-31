@@ -24,13 +24,6 @@
           </el-input>
         </el-form-item>
 
-        <el-form-item label="性别">
-          <el-radio-group v-model="form.sex">
-            <el-radio label="男">男</el-radio>
-            <el-radio label="女">女</el-radio>
-          </el-radio-group>
-        </el-form-item>
-
         <el-form-item label="联系电话">
           <el-input
             v-model="form.tel"
@@ -39,40 +32,13 @@
           </el-input>
         </el-form-item>
 
-        <el-form-item label="个人简介">
+        <el-form-item label="电子邮箱">
           <el-input
-            type="textarea"
-            v-model="form.bio"
-            placeholder="请输入个人简介"
-            :rows="3"
+            v-model="form.email"
+            placeholder="请输入电子邮箱"
             class="input-field">
           </el-input>
         </el-form-item>
-
-        <div class="password-section">
-          <h3 class="section-title">
-            <i class="el-icon-lock"></i>
-            修改密码
-          </h3>
-
-          <el-form-item label="原密码">
-            <el-input
-              type="password"
-              v-model="form.oldPassword"
-              placeholder="请输入原密码"
-              class="input-field">
-            </el-input>
-          </el-form-item>
-
-          <el-form-item label="新密码">
-            <el-input
-              type="password"
-              v-model="form.newPassword"
-              placeholder="请输入新密码"
-              class="input-field">
-            </el-input>
-          </el-form-item>
-        </div>
 
         <el-form-item class="form-actions">
           <el-button type="primary" @click="onSubmit">
@@ -90,30 +56,19 @@
 </template>
 
 <script>
-import axios from 'axios'
+import request from '@/api/request'
 export default {
   data () {
     return {
       form: {
         name: '',
-        sex: '',
         tel: '',
-        bio: '',
-        oldPassword: '',
-        newPassword: ''
+        email: ''
       },
       userInfo: {
-        password: '',
         id: ''
       },
-      rules: {
-        oldPassword: [
-          {required: false, message: '请输入原密码', trigger: 'blur'}
-        ],
-        newPassword: [
-          {required: false, message: '请输入新密码', trigger: 'blur'}
-        ]
-      }
+      rules: {}
     }
   },
   mounted () {
@@ -123,12 +78,13 @@ export default {
     async pageInit () {
       const accessToken = localStorage.getItem('accessToken')
       const username = localStorage.getItem('username')
+      const objectId = localStorage.getItem('objectId')
       const userId = localStorage.getItem('user_id')
 
-      // 优先尝试从后端获取用户信息
-      if (accessToken) {
+      // 优先尝试从后端获取用户详细信息
+      if (accessToken && objectId) {
         try {
-          const response = await axios.get('/api/v1/auth/current-user', {
+          const response = await request.get(`/api/v1/users/${objectId}`, {
             headers: {
               Authorization: `Bearer ${accessToken}`
             }
@@ -136,11 +92,54 @@ export default {
 
           if (response.data.code === 200) {
             const data = response.data.data
-            this.form.name = data.userName || data.username || ''
-            this.form.sex = data.sex || '男'
-            this.form.tel = data.tele || ''
-            this.form.bio = data.bio || ''
-            this.userInfo.id = data.id || userId || ''
+            this.form.name = data.nickname || data.username || ''
+            this.form.tel = data.phone || data.tele || ''
+            this.form.email = data.email || ''
+            this.userInfo.id = data.objectId || userId || ''
+            return
+          }
+        } catch (error) {
+          console.error('获取用户详细信息失败:', error)
+        }
+      }
+
+      // 如果没有objectId，先获取基础信息
+      if (accessToken) {
+        try {
+          const response = await request.get('/api/v1/auth/current-user', {
+            headers: {
+              Authorization: `Bearer ${accessToken}`
+            }
+          })
+
+          if (response.data.code === 200) {
+            const data = response.data.data
+            const objId = data.objectId
+            localStorage.setItem('objectId', objId || '')
+            this.userInfo.id = objId || userId || ''
+            
+            // 尝试用获取到的objectId获取详细信息
+            if (objId) {
+              try {
+                const detailResponse = await request.get(`/api/v1/users/${objId}`, {
+                  headers: {
+                    Authorization: `Bearer ${accessToken}`
+                  }
+                })
+                if (detailResponse.data.code === 200) {
+                  const detailData = detailResponse.data.data
+                  this.form.name = detailData.nickname || detailData.username || ''
+                  this.form.tel = detailData.phone || detailData.tele || ''
+                  this.form.email = detailData.email || ''
+                  return
+                }
+              } catch (detailError) {
+                console.error('获取用户详细信息失败:', detailError)
+              }
+            }
+            
+            // 如果获取详细信息失败，使用基础信息
+            this.form.name = data.nickname || data.username || ''
             return
           }
         } catch (error) {
@@ -154,45 +153,35 @@ export default {
 
       if (user) {
         this.form.name = user.user_name || ''
-        this.form.sex = user.sex || '男'
         this.form.tel = user.tele || ''
-        this.form.bio = user.bio || ''
+        this.form.email = user.email || ''
         this.userInfo.password = user.password || ''
         this.userInfo.id = user.id || userId || ''
       }
     },
     async onSubmit () {
       const accessToken = localStorage.getItem('accessToken')
+      const objectId = localStorage.getItem('objectId') || this.userInfo.id
       const userId = localStorage.getItem('user_id') || this.userInfo.id
 
-      if (!userId) {
+      if (!objectId && !userId) {
         this.$message.error('用户不存在')
         return
       }
 
-      // 构建更新数据
-      const updateData = {
-        userName: this.form.name,
-        sex: this.form.sex,
-        tele: this.form.tel,
-        bio: this.form.bio
-      }
+      const targetId = objectId || userId
 
-      if (this.form.newPassword) {
-        if (this.form.newPassword.length < 6) {
-          this.$message.error('新密码长度至少6位')
-          return
-        }
-        updateData.password = this.form.newPassword
-        if (this.form.oldPassword) {
-          updateData.oldPassword = this.form.oldPassword
-        }
+      // 构建更新数据 - 按照接口文档字段名
+      const updateData = {
+        nickname: this.form.name,
+        phone: this.form.tel,
+        email: this.form.email
       }
 
       // 优先尝试调用后端API
       if (accessToken) {
         try {
-          const response = await axios.put(`/api/v1/users/${userId}`, updateData, {
+          const response = await request.put(`/api/v1/users/${targetId}`, updateData, {
             headers: {
               Authorization: `Bearer ${accessToken}`
             }
@@ -203,6 +192,7 @@ export default {
               localStorage.setItem('user_name', this.form.name)
             }
             this.$message.success('修改成功!')
+            this.pageInit()
             return
           } else {
             this.$message.error(response.data.message || '修改失败')
@@ -210,10 +200,15 @@ export default {
           }
         } catch (error) {
           console.error('修改用户信息失败:', error)
+          this.saveToLocalStorage()
+          return
         }
       }
 
       // 后端不可用时，使用本地存储作为备用
+      this.saveToLocalStorage()
+    },
+    saveToLocalStorage () {
       const username = localStorage.getItem('username')
       const users = JSON.parse(localStorage.getItem('users') || '[]')
       const index = users.findIndex(u => u.username === username)
@@ -223,20 +218,10 @@ export default {
         return
       }
 
-      if (this.form.oldPassword && this.form.oldPassword !== this.userInfo.password) {
-        this.$message.error('原密码不正确')
-        return
-      }
-
       const localUpdateData = {
         user_name: this.form.name,
-        sex: this.form.sex,
         tele: this.form.tel,
-        bio: this.form.bio
-      }
-
-      if (this.form.newPassword) {
-        localUpdateData.password = this.form.newPassword
+        email: this.form.email
       }
 
       users[index] = { ...users[index], ...localUpdateData }
@@ -246,7 +231,7 @@ export default {
         localStorage.setItem('user_name', this.form.name)
       }
 
-      this.$message.warning('使用本地数据修改成功!')
+      this.$message.warning('本地数据修改成功!')
     },
     resetForm () {
       this.pageInit()
@@ -292,22 +277,6 @@ export default {
 
 .input-field {
   border-radius: 8px;
-}
-
-.password-section {
-  border-top: 1px dashed #ddd;
-  padding-top: 24px;
-  margin-top: 24px;
-}
-
-.section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-  margin: 0 0 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .form-actions {

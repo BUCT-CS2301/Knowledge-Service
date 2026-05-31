@@ -1,8 +1,9 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { getApiRoot } from '@/config/api'
 
 const request = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE || 'http://localhost:8085',
+  baseURL: getApiRoot(),
   timeout: 15000
 })
 

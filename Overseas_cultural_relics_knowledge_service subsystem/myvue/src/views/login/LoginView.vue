@@ -5,7 +5,7 @@
       <el-form ref="loginForm" :model="form" :rules="rules" label-width="80px" class="login-box">
         <h3 class="login-title">登录</h3>
         <el-form-item label="账号" prop="username">
-          <el-input type="text" placeholder="请输入账号" v-model="form.username"/>
+          <el-input type="text" placeholder="请输入用户ID，如 1001" v-model="form.username"/>
         </el-form-item>
         <el-form-item label="密码" prop="password">
           <el-input type="password" placeholder="请输入密码" v-model="form.password"/>
@@ -32,9 +32,10 @@
 </template>
 
 <script>
-import axios from 'axios'
 import MainFooter from '../../components/MainFooter/MainFooter'
 import MainHeader from '../../components/MainHeader/MainHeader'
+import { login, parseLoginResponse } from '@/api/user'
+import request from '@/api/request'
 
 export default {
   name: 'Login',
@@ -61,50 +62,51 @@ export default {
   },
   methods: {
     async onSubmit () {
-      if (!this.form.username || !this.form.password) {
-        this.$message.error('请输入账号和密码')
+      const username = String(this.form.username || '').trim()
+      if (!username) {
+        this.$message.error('请输入账号')
         return
       }
 
       try {
-        const response = await axios.post('/api/v1/auth/login', {
-          username: this.form.username,
+        const response = await login({
+          username: username,
           password: this.form.password
-        }, {
-          timeout: 3000  // 添加3秒超时，避免长时间等待
         })
+        const data = parseLoginResponse(response)
+        localStorage.setItem('accessToken', data.accessToken || '')
+        localStorage.setItem('refreshToken', data.refreshToken || '')
+        localStorage.setItem('username', username)
+        localStorage.setItem('islogin', '1')
 
-        if (response.data.code === 200) {
-          const data = response.data.data
-          localStorage.setItem('accessToken', data.accessToken)
-          localStorage.setItem('username', data.username)
-          localStorage.setItem('user_id', data.id.toString())
-          localStorage.setItem('user_name', data.userName || data.username)
-          localStorage.setItem('islogin', '1')
-          this.$message.success('登录成功！')
-          setTimeout(() => {
-            this.$router.push('/index')
-          }, 1000)
-        } else {
-          this.$message.error(response.data.message || '登录失败')
+        try {
+          const userResponse = await request.get('/api/v1/auth/current-user', {
+            headers: {
+              Authorization: `Bearer ${data.accessToken}`
+            }
+          })
+          if (userResponse.data.code === 200) {
+            const userData = userResponse.data.data
+            localStorage.setItem('objectId', userData.objectId || '')
+            localStorage.setItem('user_name', userData.nickname || userData.username || username)
+          }
+        } catch (e) {
+          console.error('获取用户信息失败:', e)
         }
+
+        this.$message.success('登录成功！')
+        setTimeout(() => {
+          this.$router.push('/index')
+        }, 800)
       } catch (error) {
         console.error('登录失败:', error)
-        // 如果后端不可用，尝试使用本地存储作为备用
-        const users = JSON.parse(localStorage.getItem('users') || '[]')
-        const user = users.find(u => u.username === this.form.username && u.password === this.form.password)
-
-        if (user) {
-          localStorage.setItem('username', user.username)
-          localStorage.setItem('user_id', user.id.toString())
-          localStorage.setItem('user_name', user.user_name)
-          localStorage.setItem('islogin', '1')
-          this.$message.warning('使用本地数据登录成功！')
-          setTimeout(() => {
-            this.$router.push('/index')
-          }, 1000)
+        const msg = error.message || '账号或密码错误'
+        if (error.code === 1001) {
+          this.$message.error('用户名或密码错误')
+        } else if (error.code === 1002) {
+          this.$message.error('账号已被禁用')
         } else {
-          this.$message.error('账号或密码错误')
+          this.$message.error(msg)
         }
       }
     },

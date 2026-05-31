@@ -146,6 +146,7 @@
 <script>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import { getApiRoot } from '@/config/api'
 import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
 
@@ -223,7 +224,7 @@ export default {
     const fetchDashboardData = async () => {
       isLoading.value = true
       try {
-        const response = await axios.get('http://localhost:8085/api/v1/data/dashboard')
+        const response = await axios.get(`${getApiRoot()}/api/v1/data/dashboard`)
         if (response.data && response.data.data) {
           const data = response.data.data
           if (data.stats) stats.value = data.stats

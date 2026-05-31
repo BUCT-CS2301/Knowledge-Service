@@ -79,6 +79,7 @@
 import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
 import defaultAvatar from '../../assets/timg.jpeg'
+import request from '../../api/request'
 
 export default {
   name: 'personpage',
@@ -106,7 +107,7 @@ export default {
     handleImgError () {
       this.user.userpic = defaultAvatar
     },
-    pageInit () {
+    async pageInit () {
       if (!localStorage.getItem('username')) {
         this.$message.warning('请先登录')
         setTimeout(() => {
@@ -115,15 +116,49 @@ export default {
         return
       }
 
+      const accessToken = localStorage.getItem('accessToken')
       const username = localStorage.getItem('username')
+      
+      // 优先从 localStorage 读取本地头像
       const users = JSON.parse(localStorage.getItem('users') || '[]')
       const user = users.find(u => u.username === username)
+      
+      if (user && user.avatar && user.avatar !== '') {
+        this.user.userpic = user.avatar
+      }
+      
+      // 然后从后端获取用户信息
+      if (accessToken) {
+        try {
+          const response = await request.get('/api/v1/auth/current-user', {
+            headers: {
+              Authorization: `Bearer ${accessToken}`
+            }
+          })
 
-      if (user) {
-        this.user.username = user.user_name || username
-        this.user.userpic = user.avatar && user.avatar !== '' ? user.avatar : this.user.userpic
-      } else {
-        this.user.username = username
+          if (response.data.code === 200) {
+            const data = response.data.data
+            this.user.username = data.nickname || data.username || username
+            // 只有当后端有头像且本地没有头像时，才使用后端头像
+            if (!this.user.userpic || this.user.userpic === defaultAvatar) {
+              if (data.avatar && data.avatar !== '') {
+                this.user.userpic = data.avatar
+              }
+            }
+            return
+          }
+        } catch (error) {
+          console.error('获取用户信息失败:', error)
+        }
+      }
+      
+      // 如果 localStorage 和后端都没有头像，才使用默认头像
+      if (!this.user.userpic || this.user.userpic === defaultAvatar) {
+        if (user) {
+          this.user.username = user.user_name || username
+        } else {
+          this.user.username = username
+        }
       }
     }
   }

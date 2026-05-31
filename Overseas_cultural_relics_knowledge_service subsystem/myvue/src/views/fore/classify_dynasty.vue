@@ -30,18 +30,13 @@ import MainHeader from '../../components/MainHeader/MainHeader.vue'
 import MainFooter from '../../components/MainFooter/MainFooter.vue'
 
 const DYNASTIES = [
-  { label: '唐', value: 'Tang Dynasty' },
-  { label: '宋', value: 'Song Dynasty' },
-  { label: '元', value: 'Yuan Dynasty' },
-  { label: '明', value: 'Ming Dynasty' },
-  { label: '清', value: 'Qing Dynasty' },
-  { label: '北魏', value: 'Northern Wei Dynasty' },
-  { label: '周', value: 'Zhou Dynasty' },
-  { label: '东周', value: 'Eastern Zhou Dynasty' },
-  { label: '南宋', value: 'Northern Song' },
-  { label: '东汉', value: 'Eastern Han Dynasty' },
-  { label: '西汉', value: 'Western Han Dynasty' },
-  { label: '中商', value: 'Shang Dynasty' }
+  { label: '唐', value: '唐' },
+  { label: '宋', value: '宋' },
+  { label: '元', value: '元' },
+  { label: '明', value: '明' },
+  { label: '清', value: '清' },
+  { label: '汉', value: '汉' },
+  { label: '隋', value: '隋' }
 ]
 
 export default {
