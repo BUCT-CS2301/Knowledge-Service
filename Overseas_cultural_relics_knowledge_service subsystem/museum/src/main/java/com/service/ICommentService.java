@@ -7,6 +7,7 @@ import java.util.ArrayList;
 public interface ICommentService {
     //写评论
     Integer notecomment(Integer uid, Integer rid,String text);
+    Integer notecomment(Integer uid, Integer rid, String text, String relicObjectId, String relicName);
     //删除评论
     Integer deletecomment(Integer cid);
     ArrayList<CommentView> viewcommentfrelics(Integer rid);//看当前文物的评论

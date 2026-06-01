@@ -18,6 +18,9 @@
 ## 安装依赖
 
 ```bash
+cd 知识图谱
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -27,8 +30,22 @@ pip install -r requirements.txt
 
 ```bash
 cd 知识图谱
+source .venv/bin/activate
 python run_kgc.py
 ```
+
+### 1.1 导入 Neo4j（仅本地开发库）
+
+在完成 MySQL 初始化后，可将 `artifact` / `museum` 数据**增量同步**到**本地** Neo4j：
+
+```bash
+cd 知识图谱
+source .venv/bin/activate
+python import_to_neo4j.py              # 默认本地，MERGE 增量同步
+python import_to_neo4j.py --dry-run    # 预览，不写库
+```
+
+**禁止**对远程/生产 Neo4j 运行本脚本。远程库由部署方维护，误跑可能导致数据丢失。
 
 ### 2. 分步执行
 
@@ -45,14 +62,14 @@ python run_kgc.py
 
 ## 配置说明
 
-编辑 `run_kgc.py` 中的 MySQL 配置：
+编辑 `run_kgc.py` 中的 MySQL 配置（服务器本地部署默认值）：
 
 ```python
 MYSQL_CONFIG = {
-    'host': 'rm-2zewpqd4a1y90c2uujo.mysql.rds.aliyuncs.com',
+    'host': '127.0.0.1',
     'port': 3306,
-    'user': 'chenling',
-    'password': '1849929630@qqcom',
+    'user': 'knowledge',
+    'password': 'knowledge123',
     'database': 'muse'
 }
 ```

@@ -66,6 +66,7 @@
 
 <script>
 import { mapGetters } from 'vuex'
+import { clearUserSession } from '@/api/user'
 
 export default {
   data () {
@@ -103,22 +104,9 @@ export default {
       this.router.push('/classify')
     },
     off_log () {
-      // 清除所有登录相关数据
-      localStorage.removeItem('username')
-      localStorage.removeItem('userpassword')
-      localStorage.removeItem('accessToken')
-      localStorage.removeItem('refreshToken')
-      localStorage.removeItem('objectId')
-      localStorage.removeItem('user_name')
-      localStorage.removeItem('islogin')
-      // 清除用户数据（包括登录时间和在线时长）
-      const users = JSON.parse(localStorage.getItem('users') || '[]')
-      const username = localStorage.getItem('username')
-      if (username) {
-        const filteredUsers = users.filter(u => u.username !== username)
-        localStorage.setItem('users', JSON.stringify(filteredUsers))
-      }
-      this.$router.go(0)
+      clearUserSession()
+      this.isLogin = false
+      this.$router.push('/login')
     }
   }
 }

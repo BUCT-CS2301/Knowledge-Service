@@ -18,14 +18,14 @@ public class CollectServicelmpl implements CollectService {
     private CollectMapper collectmapper;
     @Override
     public Integer addcollection(Collect collect){
-        Collect result =collectmapper.findByuidandrid(collect.getUid(),collect.getRid());
+        Collect result = collectmapper.findByuidandrid(collect.getUid(), collect.getRid());
+        if (result == null && collect.getRelicObjectId() != null && !collect.getRelicObjectId().isBlank()) {
+            result = collectmapper.findByUidAndObjectId(collect.getUid(), collect.getRelicObjectId());
+        }
         if(result!=null){
             throw new CollectduplicateException("请勿重复添加");
         }
         Integer rows=collectmapper.insert(collect);
-//        if(rows!=1){
-//            throw new InsertException("添加出现未知错误");
-//        }
         return rows;
     }
 
@@ -49,10 +49,11 @@ public class CollectServicelmpl implements CollectService {
 
     @Override
     public Collect findByuidandrid(Integer uid, Integer rid) {
-        Collect result=collectmapper.findByuidandrid(uid,rid);
-//        if(result==null){
-//            throw new DeleteLoss("收藏信息未找到");
-//        }
-        return result;
+        return collectmapper.findByuidandrid(uid, rid);
+    }
+
+    @Override
+    public Collect findByUidAndObjectId(Integer uid, String objectId) {
+        return collectmapper.findByUidAndObjectId(uid, objectId);
     }
 }

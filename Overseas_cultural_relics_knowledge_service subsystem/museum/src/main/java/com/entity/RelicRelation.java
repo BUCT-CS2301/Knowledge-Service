@@ -3,25 +3,21 @@ package com.entity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.neo4j.ogm.annotation.EndNode;
-import org.neo4j.ogm.annotation.GeneratedValue;
-import org.neo4j.ogm.annotation.Id;
-import org.neo4j.ogm.annotation.RelationshipEntity;
-import org.neo4j.ogm.annotation.StartNode;
+import org.springframework.data.neo4j.core.schema.GeneratedValue;
+import org.springframework.data.neo4j.core.schema.Id;
+import org.springframework.data.neo4j.core.schema.RelationshipProperties;
+import org.springframework.data.neo4j.core.schema.TargetNode;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@RelationshipEntity(type = "BELONGS_TO")
+@RelationshipProperties
 public class RelicRelation {
     @Id
     @GeneratedValue
     private Long id;
 
-    @StartNode
-    private RelicNode relic;
-
-    @EndNode
+    @TargetNode
     private Object target;
 
     private String relationType;

@@ -1,0 +1,18 @@
+# 运维监控定时器（每 5 分钟巡检一次）
+# 安装：
+#   sudo cp deploy/monitor.service /etc/systemd/system/ks-monitor.service
+#   sudo cp deploy/monitor.timer   /etc/systemd/system/ks-monitor.timer
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now ks-monitor.timer
+#   journalctl -u ks-monitor.service        # 查看每次巡检输出
+#   tail -f deploy/logs/ops-monitor.log      # 或直接看日志文件
+[Unit]
+Description=Knowledge-Service 健康巡检定时器
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

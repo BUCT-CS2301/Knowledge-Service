@@ -85,7 +85,14 @@
 
     <MainFooter></MainFooter>
 
-    <el-dialog title="文物详情" :visible.sync="detailVisible" width="600px">
+    <el-dialog
+      v-model="detailVisible"
+      :title="selectedRelic ? `评论 · ${selectedRelic.name}` : '评论'"
+      width="600px"
+      append-to-body
+      destroy-on-close
+      @closed="newComment = ''"
+    >
       <div v-if="selectedRelic" class="relic-detail">
         <img :src="selectedRelic.image" class="detail-image" :alt="selectedRelic.name">
         <div class="detail-info">
@@ -95,24 +102,30 @@
           <p class="detail-period">年代：{{ selectedRelic.period }}</p>
         </div>
         <div class="detail-comments">
-          <h4>评论 ({{ getRelicComments(selectedRelic.id).length }})</h4>
-          <div v-if="getRelicComments(selectedRelic.id).length === 0" class="no-comments">暂无评论</div>
+          <h4>评论 ({{ relicCommentList.length }})</h4>
+          <div v-if="relicCommentList.length === 0" class="no-comments">暂无评论，快来发表第一条吧</div>
           <div v-else class="comment-list">
-            <div v-for="comment in getRelicComments(selectedRelic.id)" :key="comment.id" class="comment-item">
-              <span class="comment-user">{{ comment.user_name }}</span>
+            <div v-for="comment in relicCommentList" :key="comment.cid || comment.id" class="comment-item">
+              <span class="comment-user">{{ comment.username || comment.user_name || '用户' }}</span>
               <span class="comment-content">{{ comment.content }}</span>
-              <span class="comment-time">{{ comment.time }}</span>
+              <span class="comment-time">{{ formatCommentTime(comment.created_time || comment.time) }}</span>
             </div>
           </div>
         </div>
+        <div class="comment-compose">
+          <el-input
+            v-model="newComment"
+            type="textarea"
+            :rows="3"
+            placeholder="写下你的评论…"
+            @keyup.enter.ctrl="submitComment"
+          />
+          <p class="comment-hint">Ctrl + Enter 快速发表</p>
+        </div>
       </div>
       <template #footer>
-        <el-input
-          v-model="newComment"
-          placeholder="发表评论"
-          @keyup.enter="submitComment"
-        ></el-input>
-        <el-button type="primary" @click="submitComment">发表</el-button>
+        <el-button @click="detailVisible = false">关闭</el-button>
+        <el-button type="primary" @click="submitComment">发表评论</el-button>
       </template>
     </el-dialog>
   </div>
@@ -122,6 +135,9 @@
 import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
 import request from '@/api/request'
+import { collectRelic, uncollectRelic, getRelicComments } from '@/api/relic'
+import { getCurrentUserId, getUserCollections, parseJsonResult } from '@/api/user'
+import { relicKeyFromObjectId } from '@/utils/relicKey'
 import carouselImg1 from '@/assets/index/1.png'
 import carouselImg2 from '@/assets/index/2.png'
 import carouselImg3 from '@/assets/index/3.png'
@@ -154,7 +170,15 @@ export default {
       ],
       detailVisible: false,
       selectedRelic: null,
-      newComment: ''
+      newComment: '',
+      userCollections: [],
+      relicComments: {}
+    }
+  },
+  computed: {
+    relicCommentList () {
+      if (!this.selectedRelic) return []
+      return this.getRelicComments(this.selectedRelic.id)
     }
   },
   created () {
@@ -162,6 +186,7 @@ export default {
     this.recommendedRelics = this.getDefaultRelics()
     this.hotMuseums = this.getDefaultMuseums()
     this.isLoading = false
+    this.loadUserCollections()
 
     // 然后在后台尝试加载API数据，不阻塞页面
     setTimeout(() => {
@@ -170,6 +195,23 @@ export default {
     }, 0)
   },
   methods: {
+    relicCollectKey (relic) {
+      if (relic.objectId) return String(relicKeyFromObjectId(relic.objectId))
+      return String(relic.id)
+    },
+    async loadUserCollections () {
+      const userId = getCurrentUserId()
+      if (!userId) {
+        this.userCollections = []
+        return
+      }
+      try {
+        const res = await getUserCollections(userId)
+        this.userCollections = parseJsonResult(res) || []
+      } catch (error) {
+        this.userCollections = []
+      }
+    },
     // 打开新闻链接
     openNews (news) {
       if (news.url) {
@@ -248,48 +290,87 @@ export default {
     viewMuseumDetail (museum) {
       this.$router.push({ path: '/museumDetail', query: { id: museum.id, name: museum.name } })
     },
-    openComment (relic) {
-      this.selectedRelic = relic
-      this.detailVisible = true
-    },
     isCollected (relicId) {
-      if (!localStorage.getItem('username')) return false
-      const collections = JSON.parse(localStorage.getItem('collections') || '[]')
-      return collections.some(c => c.relicId === relicId)
+      if (!getCurrentUserId()) return false
+      const key = String(relicId)
+      return this.userCollections.some((c) => String(c.rid) === key)
     },
-    toggleCollect (relic) {
-      if (!localStorage.getItem('username')) {
+    async toggleCollect (relic) {
+      const userId = getCurrentUserId()
+      if (!userId) {
         this.$message.warning('请先登录')
         return
       }
 
-      const collections = JSON.parse(localStorage.getItem('collections') || '[]')
-      const index = collections.findIndex(c => c.relicId === relic.id)
+      const key = this.relicCollectKey(relic)
+      const existing = this.userCollections.find((c) =>
+        (relic.objectId && c.relicObjectId === relic.objectId) || String(c.rid) === key
+      )
 
-      if (index !== -1) {
-        collections.splice(index, 1)
-        localStorage.setItem('collections', JSON.stringify(collections))
-        this.$message.success('取消收藏成功')
-      } else {
-        collections.push({
-          id: Date.now(),
-          relicId: relic.id,
-          relicName: relic.name,
-          relicImage: relic.image,
-          userId: localStorage.getItem('user_id'),
-          userName: localStorage.getItem('user_name'),
-          time: new Date().toLocaleString()
-        })
-        localStorage.setItem('collections', JSON.stringify(collections))
-        this.$message.success('收藏成功')
+      try {
+        if (existing) {
+          await uncollectRelic({
+            uid: userId,
+            objectId: existing.relicObjectId || relic.objectId,
+            rid: existing.rid || key
+          })
+          this.$message.success('取消收藏成功')
+        } else {
+          const res = await collectRelic({
+            uid: userId,
+            objectId: relic.objectId,
+            relicName: relic.name,
+            rid: relic.objectId ? undefined : key
+          })
+          if (res.data.state === 200) {
+            this.$message.success('收藏成功')
+          } else {
+            this.$message.warning(res.data.message || '收藏失败')
+            return
+          }
+        }
+        await this.loadUserCollections()
+      } catch (error) {
+        this.$message.error('收藏操作失败')
       }
     },
-    getRelicComments (relicId) {
-      const comments = JSON.parse(localStorage.getItem('comments') || '[]')
-      return comments.filter(c => c.relicId === relicId)
+    async loadRelicComments (relic) {
+      const key = this.relicCollectKey(relic)
+      if (!/^\d+$/.test(key) && !relic.objectId) return []
+      try {
+        const res = await getRelicComments({
+          rid: key,
+          objectId: relic.objectId || undefined
+        })
+        if (res.data.state === 200 && Array.isArray(res.data.data)) {
+          this.relicComments[key] = res.data.data
+          return res.data.data
+        }
+      } catch (_) { /* ignore */ }
+      return this.relicComments[key] || []
     },
-    submitComment () {
-      if (!localStorage.getItem('username')) {
+    getRelicComments (relicId) {
+      const key = String(relicId)
+      return this.relicComments[key] || []
+    },
+    formatCommentTime (value) {
+      if (!value) return ''
+      const d = new Date(value)
+      return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleString('zh-CN')
+    },
+    async openComment (relic) {
+      if (!getCurrentUserId()) {
+        this.$message.warning('请先登录后再评论')
+        return
+      }
+      this.selectedRelic = relic
+      this.newComment = ''
+      this.detailVisible = true
+      await this.loadRelicComments(relic)
+    },
+    async submitComment () {
+      const userId = getCurrentUserId()
+      if (!userId) {
         this.$message.warning('请先登录')
         return
       }
@@ -298,19 +379,41 @@ export default {
         return
       }
 
-      const comments = JSON.parse(localStorage.getItem('comments') || '[]')
-      comments.push({
-        id: Date.now(),
-        relicId: this.selectedRelic.id,
-        relicName: this.selectedRelic.name,
-        userId: localStorage.getItem('user_id'),
-        user_name: localStorage.getItem('user_name'),
-        content: this.newComment,
-        time: new Date().toLocaleString()
-      })
-      localStorage.setItem('comments', JSON.stringify(comments))
-      this.newComment = ''
-      this.$message.success('评论成功')
+      const relic = this.selectedRelic
+      const key = this.relicCollectKey(relic)
+      if (!/^\d+$/.test(String(key)) && !relic.objectId) {
+        this.$message.info('该文物暂不支持评论')
+        return
+      }
+
+      try {
+        const res = await request.post('/search/searchById/comment', {
+          uid: userId,
+          rid: key,
+          content: this.newComment,
+          objectId: relic.objectId || undefined,
+          relicName: relic.name
+        })
+        if (res.data.state === 200) {
+          this.$message.success('评论成功')
+          const key = this.relicCollectKey(relic)
+          const content = this.newComment
+          const list = this.relicComments[key] || []
+          list.push({
+            cid: Date.now(),
+            username: localStorage.getItem('user_name') || userId,
+            content,
+            created_time: new Date().toISOString()
+          })
+          this.relicComments[key] = [...list]
+          this.newComment = ''
+          await this.loadRelicComments(relic)
+        } else {
+          this.$message.warning(res.data.message || '评论失败')
+        }
+      } catch (error) {
+        this.$message.error('评论失败')
+      }
     },
     handleRelicImageError (event, relic) {
       // 图片加载失败时使用备用图片
@@ -699,6 +802,16 @@ export default {
       text-align: center;
       color: #999;
       padding: 20px;
+    }
+  }
+
+  .comment-compose {
+    margin-top: 16px;
+
+    .comment-hint {
+      margin: 6px 0 0;
+      font-size: 12px;
+      color: #999;
     }
   }
 }

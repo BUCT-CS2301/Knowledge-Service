@@ -41,9 +41,12 @@
               v-for="(relic, index) in currentPeriod.relics"
               :key="index"
               class="relic-card"
-              @click="showRelicDetail(relic)"
+              role="button"
+              tabindex="0"
+              @click="goRelicDetail(relic)"
+              @keyup.enter="goRelicDetail(relic)"
             >
-              <img :src="imageFor(relic)" :alt="relic.name" class="relic-image" referrerpolicy="no-referrer" @error="onImgError($event, relic)">
+              <img :src="imageFor(relic)" :alt="relic.name" class="relic-image" @error="onImgError">
               <div class="relic-info">
                 <h4>{{ relic.name }}</h4>
                 <p class="relic-type">{{ relic.type }}</p>
@@ -65,9 +68,13 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import axios from 'axios'
 import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
-import { getArtifactImageUrl, normalizeExternalImageUrl } from '@/utils/artifactPlaceholder'
+import { getApiRoot } from '@/config/api'
+import { timelineMockData } from '@/data/timelineMock'
+import { getArtifactImageUrl } from '@/utils/artifactPlaceholder'
 
 export default {
   name: 'Timeline',
@@ -76,9 +83,12 @@ export default {
     MainFooter
   },
   setup() {
+    const router = useRouter()
+    const LOCAL_FALLBACK_IMG = '/timg.jpeg'
     const selectedPeriod = ref(0)
     const isLoading = ref(false)
     const timelineData = ref([])
+    const dataSource = ref('none')
 
     const progressWidth = computed(() => {
       return `${((selectedPeriod.value + 1) / timelineData.value.length) * 100}%`
@@ -96,135 +106,84 @@ export default {
     }
 
     const loadMockData = () => {
-      const mockData = [
-        {
-          dynasty: '远古',
-          year: '约公元前5000-2000年',
-          description: '新石器时代，彩陶文化繁荣，玉器制作技艺开始发展。',
-          relics: [
-            { name: '彩陶盆', type: '陶瓷', museum: '中国国家博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=neolithic%20painted%20pottery%20bowl%20chinese&image_size=square' },
-            { name: '玉琮', type: '玉器', museum: '大英博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=jade%20cong%20tube%20neolithic%20chinese&image_size=square' }
-          ]
-        },
-        {
-          dynasty: '夏商',
-          year: '约公元前2000-1046年',
-          description: '青铜时代早期，甲骨文出现，青铜礼器开始盛行。',
-          relics: [
-            { name: '青铜兽面纹鼎', type: '青铜器', museum: '故宫博物院', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=bronze%20ding%20vessel%20with%20animal%20mask%20shang%20dynasty&image_size=square' },
-            { name: '甲骨文', type: '文字', museum: '中国国家博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=oracle%20bone%20inscription%20shang%20dynasty&image_size=square' }
-          ]
-        },
-        {
-          dynasty: '西周',
-          year: '公元前1046-771年',
-          description: '礼乐制度确立，青铜器铭文发达，玉器工艺精湛。',
-          relics: [
-            { name: '毛公鼎', type: '青铜器', museum: '台北故宫博物院', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Maogong%20ding%20bronze%20vessel%20western%20zhou&image_size=square' },
-            { name: '玉圭', type: '玉器', museum: '大英博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=jade%20gui%20tablet%20zhou%20dynasty&image_size=square' }
-          ]
-        },
-        {
-          dynasty: '春秋战国',
-          year: '公元前770-221年',
-          description: '百家争鸣，青铜器走向世俗化，漆器工艺兴起。',
-          relics: [
-            { name: '越王勾践剑', type: '青铜器', museum: '湖北省博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=ancient%20chinese%20bronze%20sword%20spring%20autumn&image_size=square' },
-            { name: '曾侯乙编钟', type: '青铜器', museum: '湖北省博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=bronze%20bell%20set%20zeng%20hou%20yi&image_size=square' }
-          ]
-        },
-        {
-          dynasty: '秦汉',
-          year: '公元前221-220年',
-          description: '统一王朝建立，陶瓷、漆器工艺发展，丝绸之路开始形成。',
-          relics: [
-            { name: '秦兵马俑', type: '陶俑', museum: '秦始皇兵马俑博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=terracotta%20warrior%20qin%20dynasty&image_size=square' },
-            { name: '马王堆帛画', type: '绘画', museum: '湖南省博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=silk%20painting%20mawangdui%20han%20dynasty&image_size=square' }
-          ]
-        },
-        {
-          dynasty: '三国两晋',
-          year: '220-589年',
-          description: '战乱频繁但文化繁荣，佛教艺术传入，绘画书法发展。',
-          relics: [
-            { name: '顾恺之女史箴图', type: '书画', museum: '大英博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Admonitions%20Scroll%20gu%20kaizhi%20painting&image_size=square' },
-            { name: '青瓷莲花尊', type: '陶瓷', museum: '故宫博物院', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=celadon%20lotus%20vase%20southern%20dynasty&image_size=square' }
-          ]
-        },
-        {
-          dynasty: '隋唐',
-          year: '581-907年',
-          description: '盛世繁荣，唐三彩、青花瓷兴起，中外文化交流频繁。',
-          relics: [
-            { name: '唐三彩骆驼', type: '陶瓷', museum: '故宫博物院', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Tang%20dynasty%20tri-colored%20pottery%20camel&image_size=square' },
-            { name: '敦煌壁画', type: '绘画', museum: '敦煌研究院', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Dunhuang%20mural%20painting%20Tang%20dynasty&image_size=square' }
-          ]
-        },
-        {
-          dynasty: '五代十国',
-          year: '907-960年',
-          description: '政权更迭频繁，但艺术持续发展，绘画成就突出。',
-          relics: [
-            { name: '韩熙载夜宴图', type: '书画', museum: '故宫博物院', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Night%20Banquet%20painting%20gu%20hongzhong&image_size=square' },
-            { name: '越窑青瓷', type: '陶瓷', museum: '上海博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=yue%20kiln%20celadon%20five%20dynasties&image_size=square' }
-          ]
-        },
-        {
-          dynasty: '宋元',
-          year: '960-1368年',
-          description: '瓷器工艺达到顶峰，五大名窑闻名于世，文人书画兴盛。',
-          relics: [
-            { name: '汝窑青瓷', type: '陶瓷', museum: '大英博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Ru%20kiln%20celadon%20porcelain%20song%20dynasty&image_size=square' },
-            { name: '清明上河图', type: '书画', museum: '故宫博物院', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=Qingming%20Scroll%20painting%20song%20dynasty&image_size=square' }
-          ]
-        },
-        {
-          dynasty: '明清',
-          year: '1368-1912年',
-          description: '官窑瓷器精美绝伦，珐琅彩、粉彩等新工艺出现。',
-          relics: [
-            { name: '青花瓷瓶', type: '陶瓷', museum: '大英博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=blue%20and%20white%20porcelain%20vase%20ming%20dynasty&image_size=square' },
-            { name: '珐琅彩瓷', type: '陶瓷', museum: '大都会博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=enamel%20porcelain%20qing%20dynasty&image_size=square' }
-          ]
-        },
-        {
-          dynasty: '近现代',
-          year: '1912-2000年',
-          description: '近现代文物保护与收藏兴起，大量海外流失文物开始回流。',
-          relics: [
-            { name: '敦煌遗书', type: '文献', museum: '敦煌研究院', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=dunhuang%20manuscript%20scroll%20document&image_size=square' },
-            { name: '圆明园兽首', type: '青铜器', museum: '保利艺术博物馆', image: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=bronze%20animal%20head%20yuanmingyuan&image_size=square' }
-          ]
-        }
-      ]
-      timelineData.value = [...mockData]
+      timelineData.value = timelineMockData.map(period => ({
+        ...period,
+        relics: period.relics.map(relic => ({ ...relic }))
+      }))
     }
 
-    // 时间轴展示策展精选文物（不在海外馆藏数据集中），统一用类型占位图，保证图片稳定可见
     const imageFor = (relic) => {
-      const url = relic && relic.image ? String(relic.image) : ''
-      if (url && /^https?:\/\//i.test(url) && !/neeko-copilot\.bytedance\.net|example\.com/i.test(url)) {
-        return normalizeExternalImageUrl(url)
+      const url = (relic?.image || relic?.img_url || '').toString().trim()
+      if (url.startsWith('/timeline/')) {
+        return url
       }
-      return getArtifactImageUrl({ object_name: relic.name, cat1: relic.type, cat3: relic.type })
+      if (url && !/neeko-copilot\.bytedance\.net|example\.com|^https?:\/\//i.test(url)) {
+        return url
+      }
+      if (url && /^https?:\/\//i.test(url) && !/neeko-copilot\.bytedance\.net|example\.com/i.test(url)) {
+        return url
+      }
+      return getArtifactImageUrl({ object_name: relic.name, cat1: relic.type, cat3: relic.type }) || LOCAL_FALLBACK_IMG
     }
 
-    const onImgError = (e, relic) => {
+    const onImgError = (e) => {
       e.target.onerror = null
-      e.target.src = getArtifactImageUrl({ object_name: relic.name, cat1: relic.type, cat3: relic.type })
+      e.target.src = LOCAL_FALLBACK_IMG
     }
 
-    const refreshData = () => {
-      isLoading.value = true
+    const buildDetailRoute = (relic) => {
+      if (relic.objectId) {
+        return { path: '/antiqueDetail', query: { objectId: relic.objectId } }
+      }
+      if (relic.id) {
+        return { path: '/relicDetail', query: { id: relic.id, name: relic.name } }
+      }
+      return { path: '/relicDetail', query: { from: 'timeline', name: relic.name } }
+    }
+
+    const saveRelicSnapshot = (relic) => {
+      const period = currentPeriod.value
+      sessionStorage.setItem('timelineRelicDetail', JSON.stringify({
+        id: relic.id || 'timeline',
+        objectId: relic.objectId || '',
+        name: relic.name,
+        museum: relic.museum,
+        period: `${period.dynasty}（${period.year}）`,
+        image: imageFor(relic),
+        description: relic.description || `${relic.name}，${relic.type}类文物，现藏于${relic.museum}。`
+      }))
+    }
+
+    const goRelicDetail = (relic) => {
+      saveRelicSnapshot(relic)
+      router.push(buildDetailRoute(relic))
+    }
+
+    const fetchTimelineData = async () => {
       loadMockData()
+      dataSource.value = 'mock'
+      isLoading.value = true
+      try {
+        const response = await axios.get(`${getApiRoot()}/api/v1/data/timeline`, { timeout: 3000 })
+        const payload = response.data
+        const list = payload?.data
+        const ok = payload && (payload.state === 200 || payload.code === 200) && Array.isArray(list)
+        const relicCount = ok ? list.reduce((sum, p) => sum + (p.relics?.length || 0), 0) : 0
+        if (ok && relicCount > 0) {
+          timelineData.value = list
+          dataSource.value = 'api'
+        }
+      } catch (error) {
+        /* 保持 mock */
+      }
       if (selectedPeriod.value >= timelineData.value.length) {
         selectedPeriod.value = 0
       }
       isLoading.value = false
     }
 
-    const showRelicDetail = (relic) => {
-      console.log('Relic detail:', relic)
+    const refreshData = () => {
+      fetchTimelineData()
     }
 
     onMounted(() => {
@@ -238,7 +197,7 @@ export default {
       progressWidth,
       selectPeriod,
       refreshData,
-      showRelicDetail,
+      goRelicDetail,
       imageFor,
       onImgError,
       isLoading
@@ -388,6 +347,8 @@ export default {
 }
 
 .relic-card {
+  display: block;
+  cursor: pointer;
   background: #fafafa;
   border-radius: 12px;
   overflow: hidden;

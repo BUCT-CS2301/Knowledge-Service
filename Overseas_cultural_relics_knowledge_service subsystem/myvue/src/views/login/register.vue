@@ -97,14 +97,11 @@ export default {
         const response = await register({
           username: this.form.username,
           password: this.form.password,
-          nickname: this.form.username,
-          email: this.form.email || '',
-          phone: this.form.tele || '',
-          roleIds: ['aaac088a-6318-45f5-999f-9e8958d1f8bb'],
-          role: 'ADMIN'
+          sex: this.form.sex === '女' ? '0' : '1',
+          tele: this.form.tele || ''
         })
         const data = parseRegisterResponse(response)
-        this.$message.success(`注册成功！用户ID为：${data.userId}`)
+        this.$message.success(`注册成功！用户ID为：${data.userId}，请使用该 ID 登录`)
         setTimeout(() => {
           this.$router.push('/login')
         }, 1000)

@@ -13,8 +13,9 @@ public class KnowledgeGraphController extends BaseController {
     @Autowired
     private KnowledgeGraphService knowledgeGraphService;
 
+    /** limit：演示子图文物数量，默认 25，最大 40 */
     @GetMapping
-    public JsonResult getGraphData(@RequestParam(required = false) Integer limit) {
+    public JsonResult getGraphData(@RequestParam(required = false, defaultValue = "25") Integer limit) {
         GraphResponse graphData = knowledgeGraphService.getGraphData(limit);
         return JsonResult.success(graphData);
     }

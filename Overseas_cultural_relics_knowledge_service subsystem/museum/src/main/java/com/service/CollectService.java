@@ -15,4 +15,5 @@ public interface CollectService {
     List<CollectView> collectionfromuid(Integer uid);
 
     Collect findByuidandrid(Integer uid,Integer rid);
+    Collect findByUidAndObjectId(Integer uid, String objectId);
 }

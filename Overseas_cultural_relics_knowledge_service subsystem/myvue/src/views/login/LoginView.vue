@@ -34,8 +34,7 @@
 <script>
 import MainFooter from '../../components/MainFooter/MainFooter'
 import MainHeader from '../../components/MainHeader/MainHeader'
-import { login, parseLoginResponse } from '@/api/user'
-import request from '@/api/request'
+import { login, parseLoginResponse, getUserDetail, parseUserDetailResponse } from '@/api/user'
 
 export default {
   name: 'Login',
@@ -74,22 +73,16 @@ export default {
           password: this.form.password
         })
         const data = parseLoginResponse(response)
-        localStorage.setItem('accessToken', data.accessToken || '')
-        localStorage.setItem('refreshToken', data.refreshToken || '')
-        localStorage.setItem('username', username)
+        localStorage.setItem('accessToken', data.token || '')
+        localStorage.setItem('username', String(data.userId))
         localStorage.setItem('islogin', '1')
+        localStorage.removeItem('collections')
+        localStorage.removeItem('comments')
 
         try {
-          const userResponse = await request.get('/api/v1/auth/current-user', {
-            headers: {
-              Authorization: `Bearer ${data.accessToken}`
-            }
-          })
-          if (userResponse.data.code === 200) {
-            const userData = userResponse.data.data
-            localStorage.setItem('objectId', userData.objectId || '')
-            localStorage.setItem('user_name', userData.nickname || userData.username || username)
-          }
+          const userResponse = await getUserDetail(data.userId)
+          const userData = parseUserDetailResponse(userResponse)
+          localStorage.setItem('user_name', userData.user_name || String(data.userId))
         } catch (e) {
           console.error('获取用户信息失败:', e)
         }
@@ -101,10 +94,12 @@ export default {
       } catch (error) {
         console.error('登录失败:', error)
         const msg = error.message || '账号或密码错误'
-        if (error.code === 1001) {
-          this.$message.error('用户名或密码错误')
-        } else if (error.code === 1002) {
-          this.$message.error('账号已被禁用')
+        if (error.code === 4000) {
+          this.$message.error('用户不存在')
+        } else if (error.code === 6000) {
+          this.$message.error('密码错误')
+        } else if (error.code === 9000) {
+          this.$message.error('账号已被限制登录')
         } else {
           this.$message.error(msg)
         }

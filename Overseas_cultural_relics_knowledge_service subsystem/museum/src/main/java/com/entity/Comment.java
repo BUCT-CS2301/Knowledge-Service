@@ -8,6 +8,8 @@ public class Comment extends BaseC implements Serializable {
     private Integer rid;//文物id
     private Integer uid;//用户id
     private Integer user_comment;//用户评论权限
+    private String relicObjectId;
+    private String relicName;
     public Integer getUid() {
         return uid;
     }
@@ -46,6 +48,22 @@ public class Comment extends BaseC implements Serializable {
 
     public void setUser_comment(Integer user_comment) {
         this.user_comment = user_comment;
+    }
+
+    public String getRelicObjectId() {
+        return relicObjectId;
+    }
+
+    public void setRelicObjectId(String relicObjectId) {
+        this.relicObjectId = relicObjectId;
+    }
+
+    public String getRelicName() {
+        return relicName;
+    }
+
+    public void setRelicName(String relicName) {
+        this.relicName = relicName;
     }
 
 

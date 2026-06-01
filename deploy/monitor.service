@@ -1,0 +1,12 @@
+# 运维监控一次性执行单元（由 ks-monitor.timer 触发）
+# 注意：请把 WorkingDirectory / ExecStart 改成服务器上仓库的实际绝对路径
+[Unit]
+Description=Knowledge-Service 健康巡检
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/ubuntu/课设/课设/Knowledge-Service
+ExecStart=/usr/bin/env bash deploy/monitor.sh
+# 巡检日志默认写入 deploy/logs/ops-monitor.log，可用环境变量改到 /var/log
+Environment=LOG_FILE=/home/ubuntu/课设/课设/Knowledge-Service/deploy/logs/ops-monitor.log

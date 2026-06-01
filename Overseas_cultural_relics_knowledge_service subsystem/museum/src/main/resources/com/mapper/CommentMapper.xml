@@ -3,11 +3,11 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.mapper.CommentMapper">
     <resultMap id="CommentEntityMap" type="com.entity.Comment">
-        <id column="user_comment_id" property="cid"/><result column="user_id" property="uid"/><result column="relic_id" property="rid"/> <result column="content" property="content"/><result column="user_comment" property="user_comment"/>  <result column="created_time" property="createdTime"/>
+        <id column="user_comment_id" property="cid"/><result column="user_id" property="uid"/><result column="relic_id" property="rid"/><result column="relic_object_id" property="relicObjectId"/><result column="relic_name" property="relicName"/><result column="content" property="content"/><result column="user_comment" property="user_comment"/>  <result column="created_time" property="createdTime"/>
     </resultMap>
     <insert id="insert" useGeneratedKeys="true" keyProperty="cid">
         INSERT INTO
-            comment(user_id,relic_id,content,user_comment,created_time,modified_time) VALUES (#{uid}, #{rid}, #{content}, #{user_comment}, #{createdTime},  #{modifiedTime})
+            comment_check(user_id,relic_id,relic_object_id,relic_name,content,user_comment,created_time,modified_time) VALUES (#{uid}, #{rid}, #{relicObjectId}, #{relicName}, #{content}, #{user_comment}, #{createdTime},  #{modifiedTime})
     </insert>
     <delete id="delete">
         DELETE FROM comment_check WHERE user_comment_id=#{cid}
@@ -18,10 +18,13 @@
         comment_check.user_id as uid,
         comment_check.relic_id as rid,
         user.user_name as username,
-        cultural_relics_data.object_name as relicname,
+        COALESCE(cultural_relics_data.object_name, comment_check.relic_name, CONCAT('文物#', comment_check.relic_id)) as relicname,
         comment_check.content as content,
         comment_check.created_time as created_time
-        FROM comment_check,user,cultural_relics_data WHERE comment_check.user_id=#{uid} and comment_check.relic_id=#{rid} and comment_check.user_id=user.user_id and comment_check.relic_id=cultural_relics_data.id
+        FROM comment_check
+        INNER JOIN user ON comment_check.user_id = user.user_id
+        LEFT JOIN cultural_relics_data ON comment_check.relic_id = cultural_relics_data.id
+        WHERE comment_check.user_id=#{uid} AND comment_check.relic_id=#{rid}
     </select>
     <select id="findByUid" resultType="com.entity.CommentView">
         SELECT
@@ -29,11 +32,13 @@
             comment_check.user_id as uid,
             comment_check.relic_id as rid,
             user.user_name as username,
-            cultural_relics_data.object_name as relicname,
+            COALESCE(cultural_relics_data.object_name, comment_check.relic_name, CONCAT('文物#', comment_check.relic_id)) as relicname,
             comment_check.content as content,
             comment_check.created_time as created_time
-        FROM comment_check,user,cultural_relics_data WHERE comment_check.user_id=#{uid}  and comment_check.user_id=user.user_id and comment_check.relic_id=cultural_relics_data.id
-
+        FROM comment_check
+        INNER JOIN user ON comment_check.user_id = user.user_id
+        LEFT JOIN cultural_relics_data ON comment_check.relic_id = cultural_relics_data.id
+        WHERE comment_check.user_id=#{uid}
     </select>
     <select id="findByRid" resultType="com.entity.CommentView">
         SELECT
@@ -41,10 +46,13 @@
             comment_check.user_id as uid,
             comment_check.relic_id as rid,
             user.user_name as username,
-            cultural_relics_data.object_name as relicname,
+            COALESCE(cultural_relics_data.object_name, comment_check.relic_name, CONCAT('文物#', comment_check.relic_id)) as relicname,
             comment_check.content as content,
             comment_check.created_time as created_time
-        FROM comment_check,user,cultural_relics_data WHERE comment_check.relic_id= #{rid}  and comment_check.user_id=user.user_id and comment_check.relic_id=cultural_relics_data.id
+        FROM comment_check
+        INNER JOIN user ON comment_check.user_id = user.user_id
+        LEFT JOIN cultural_relics_data ON comment_check.relic_id = cultural_relics_data.id
+        WHERE comment_check.relic_id= #{rid}
     </select>
     <select id="findBycid" resultMap="CommentEntityMap">
         SELECT * FROM comment_check WHERE user_comment_id=#{cid}

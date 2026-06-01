@@ -28,9 +28,15 @@ public class DashboardServiceImpl implements DashboardService {
     public Map<String, Object> getDashboardData() {
         Map<String, Object> result = new HashMap<>();
 
-        List<RelicNode> relics = relicRepository.findRelicsWithLimit(1000);
-        List<MuseumNode> museums = museumRepository.findAll();
-        List<PeriodNode> periods = periodRepository.findAll();
+        List<RelicNode> relics = Collections.emptyList();
+        List<MuseumNode> museums = Collections.emptyList();
+        try {
+            relics = relicRepository.findRelicsWithLimit(1000);
+            museums = museumRepository.findAll();
+            periodRepository.findAll();
+        } catch (Exception e) {
+            System.out.println("Neo4j不可用，Dashboard 使用默认统计数据: " + e.getMessage());
+        }
 
         Map<String, Object> stats = new HashMap<>();
         if (relics.isEmpty()) {

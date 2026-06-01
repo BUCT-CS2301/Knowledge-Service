@@ -61,7 +61,7 @@
 <script>
 var storage = window.localStorage
 import defaultAvatar from '../../assets/timg.jpeg'
-import request from '@/api/request'
+import { fetchCurrentUserProfile, getCurrentUserId, getUserCollections, getUserComments, parseJsonResult } from '@/api/user'
 
 export default {
   name: 'personpage_hello',
@@ -94,60 +94,39 @@ export default {
   },
   methods: {
     async initData () {
-      const accessToken = storage.getItem('accessToken')
       const username = storage.getItem('username')
-      
+      const userId = getCurrentUserId()
+
       // 优先从 localStorage 读取本地头像
       const users = JSON.parse(storage.getItem('users') || '[]')
-      const user = users.find(u => u.username === username)
-      
-      if (user && user.avatar && user.avatar !== '') {
-        this.userAvatar = user.avatar
+      const localUser = users.find(u => u.username === username)
+      if (localUser?.avatar) {
+        this.userAvatar = localUser.avatar
       }
 
-      // 然后从后端获取用户信息
-      if (accessToken) {
+      if (userId) {
         try {
-          const response = await request.get('/api/v1/auth/current-user', {
-            headers: {
-              Authorization: `Bearer ${accessToken}`
-            }
-          })
+          const profile = await fetchCurrentUserProfile()
+          this.username = profile.user_name || String(profile.user_id)
+          storage.setItem('user_name', this.username)
 
-          if (response.data.code === 200) {
-            const data = response.data.data
-            this.username = data.nickname || data.username || username || '用户'
-            // 只有当后端有头像且本地没有头像时，才使用后端头像
-            if (!this.userAvatar || this.userAvatar === defaultAvatar) {
-              if (data.avatar && data.avatar !== '') {
-                this.userAvatar = data.avatar
-              }
-            }
-          }
+          const [collectRes, commentRes] = await Promise.all([
+            getUserCollections(userId),
+            getUserComments(userId)
+          ])
+          this.collectionsCount = (parseJsonResult(collectRes) || []).length
+          this.commentsCount = (parseJsonResult(commentRes) || []).length
         } catch (error) {
           console.error('获取用户信息失败:', error)
+          this.username = storage.getItem('user_name') || username || '用户'
         }
+      } else {
+        this.username = username || '用户'
       }
-
-      // 如果 localStorage 和后端都没有头像，才使用默认头像
-      if (!this.username || this.username === '用户') {
-        if (user) {
-          this.username = user.user_name || username
-        } else {
-          this.username = username || '用户'
-        }
-      }
-
-      const userId = storage.getItem('objectId') || storage.getItem('user_id')
-      const collections = JSON.parse(storage.getItem('collections') || '[]')
-      const comments = JSON.parse(storage.getItem('comments') || '[]')
-
-      this.collectionsCount = collections.filter(c => c.userId === userId).length
-      this.commentsCount = comments.filter(c => c.userId === userId).length
 
       // 从 localStorage 读取登录时间，如果没有则记录当前时间
-      if (user && user.loginTime) {
-        this.loginTime = user.loginTime
+      if (localUser?.loginTime) {
+        this.loginTime = localUser.loginTime
       } else {
         this.loginTime = new Date().toLocaleString('zh-CN')
         // 保存登录时间到 localStorage

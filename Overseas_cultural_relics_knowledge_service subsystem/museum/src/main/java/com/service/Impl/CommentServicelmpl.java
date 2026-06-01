@@ -26,6 +26,11 @@ public class CommentServicelmpl implements ICommentService {
     UserMapper userMapper;
     @Override
     public Integer notecomment(Integer uid,Integer rid,String text){
+        return notecomment(uid, rid, text, null, null);
+    }
+
+    @Override
+    public Integer notecomment(Integer uid, Integer rid, String text, String relicObjectId, String relicName) {
         int user_comment = userMapper.findByUser_id(uid).getUser_comment();
         if(user_comment==3){
             throw new CommentPermissionException("用户无权限评论");
@@ -35,6 +40,8 @@ public class CommentServicelmpl implements ICommentService {
         comment.setRid(rid);
         comment.setContent(text);
         comment.setUser_comment(user_comment);
+        comment.setRelicObjectId(relicObjectId);
+        comment.setRelicName(relicName);
         Date now=new Date();
         comment.setModifiedTime(now);
         comment.setCreatedTime(now);

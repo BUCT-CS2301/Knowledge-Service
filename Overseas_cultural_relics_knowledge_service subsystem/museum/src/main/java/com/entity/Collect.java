@@ -6,6 +6,8 @@ public class Collect implements Serializable {
     private Integer id;
     private Integer uid;
     private Integer rid;
+    private String relicObjectId;
+    private String relicName;
 
     public Integer getId() {
         return id;
@@ -29,6 +31,22 @@ public class Collect implements Serializable {
 
     public void setRid(Integer rid) {
         this.rid = rid;
+    }
+
+    public String getRelicObjectId() {
+        return relicObjectId;
+    }
+
+    public void setRelicObjectId(String relicObjectId) {
+        this.relicObjectId = relicObjectId;
+    }
+
+    public String getRelicName() {
+        return relicName;
+    }
+
+    public void setRelicName(String relicName) {
+        this.relicName = relicName;
     }
 
     @Override

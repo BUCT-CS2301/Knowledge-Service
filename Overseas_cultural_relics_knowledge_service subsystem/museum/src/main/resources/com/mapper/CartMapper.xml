@@ -58,7 +58,7 @@
         from cultural_relics_data
         where   label REGEXP #{str} or medium REGEXP #{str}
         or object_name REGEXP #{str} or object_type REGEXP #{str} or previous_owner REGEXP #{str} or
-        provenance REGEXP #{str} or time_period REGEXP #{str} or cat1 REGEXP #{str} or cat3 REGEXP #{str}  #{str} or makers_name REGEXP #{str} LIMIT 400,100
+        provenance REGEXP #{str} or time_period REGEXP #{str} or cat1 REGEXP #{str} or cat3 REGEXP #{str} or makers_name REGEXP #{str} LIMIT 0,100
     </select>
 
     <select id="findone" resultType="com.entity.Cart">

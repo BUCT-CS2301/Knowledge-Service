@@ -5,7 +5,7 @@
         <i class="el-icon-edit"></i>
         修改信息
       </h1>
-      <p class="page-desc">更新您的个人资料</p>
+      <p class="page-desc">更新您的个人资料（修改需验证原密码）</p>
     </div>
 
     <div class="form-card">
@@ -16,7 +16,7 @@
         :rules="rules"
         class="info-form">
 
-        <el-form-item label="用户名">
+        <el-form-item label="用户名" prop="name">
           <el-input
             v-model="form.name"
             placeholder="请输入用户名"
@@ -24,7 +24,14 @@
           </el-input>
         </el-form-item>
 
-        <el-form-item label="联系电话">
+        <el-form-item label="性别">
+          <el-radio-group v-model="form.sex">
+            <el-radio label="1">男</el-radio>
+            <el-radio label="0">女</el-radio>
+          </el-radio-group>
+        </el-form-item>
+
+        <el-form-item label="联系电话" prop="tel">
           <el-input
             v-model="form.tel"
             placeholder="请输入联系电话"
@@ -32,10 +39,12 @@
           </el-input>
         </el-form-item>
 
-        <el-form-item label="电子邮箱">
+        <el-form-item label="原密码" prop="oldPassword">
           <el-input
-            v-model="form.email"
-            placeholder="请输入电子邮箱"
+            v-model="form.oldPassword"
+            type="password"
+            placeholder="请输入当前密码以保存修改"
+            show-password
             class="input-field">
           </el-input>
         </el-form-item>
@@ -56,19 +65,27 @@
 </template>
 
 <script>
-import request from '@/api/request'
+import {
+  fetchCurrentUserProfile,
+  getCurrentUserId,
+  updateUserProfile,
+  parseJsonResult
+} from '@/api/user'
+
 export default {
   data () {
     return {
       form: {
         name: '',
+        sex: '1',
         tel: '',
-        email: ''
+        oldPassword: ''
       },
-      userInfo: {
-        id: ''
-      },
-      rules: {}
+      userId: '',
+      rules: {
+        name: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+        oldPassword: [{ required: true, message: '请输入原密码', trigger: 'blur' }]
+      }
     }
   },
   mounted () {
@@ -76,164 +93,59 @@ export default {
   },
   methods: {
     async pageInit () {
-      const accessToken = localStorage.getItem('accessToken')
-      const username = localStorage.getItem('username')
-      const objectId = localStorage.getItem('objectId')
-      const userId = localStorage.getItem('user_id')
-
-      // 优先尝试从后端获取用户详细信息
-      if (accessToken && objectId) {
-        try {
-          const response = await request.get(`/api/v1/users/${objectId}`, {
-            headers: {
-              Authorization: `Bearer ${accessToken}`
-            }
-          })
-
-          if (response.data.code === 200) {
-            const data = response.data.data
-            this.form.name = data.nickname || data.username || ''
-            this.form.tel = data.phone || data.tele || ''
-            this.form.email = data.email || ''
-            this.userInfo.id = data.objectId || userId || ''
-            return
-          }
-        } catch (error) {
-          console.error('获取用户详细信息失败:', error)
-        }
+      const userId = getCurrentUserId()
+      if (!userId) {
+        this.$message.warning('请先登录')
+        return
       }
-
-      // 如果没有objectId，先获取基础信息
-      if (accessToken) {
-        try {
-          const response = await request.get('/api/v1/auth/current-user', {
-            headers: {
-              Authorization: `Bearer ${accessToken}`
-            }
-          })
-
-          if (response.data.code === 200) {
-            const data = response.data.data
-            const objId = data.objectId
-            localStorage.setItem('objectId', objId || '')
-            this.userInfo.id = objId || userId || ''
-            
-            // 尝试用获取到的objectId获取详细信息
-            if (objId) {
-              try {
-                const detailResponse = await request.get(`/api/v1/users/${objId}`, {
-                  headers: {
-                    Authorization: `Bearer ${accessToken}`
-                  }
-                })
-                if (detailResponse.data.code === 200) {
-                  const detailData = detailResponse.data.data
-                  this.form.name = detailData.nickname || detailData.username || ''
-                  this.form.tel = detailData.phone || detailData.tele || ''
-                  this.form.email = detailData.email || ''
-                  return
-                }
-              } catch (detailError) {
-                console.error('获取用户详细信息失败:', detailError)
-              }
-            }
-            
-            // 如果获取详细信息失败，使用基础信息
-            this.form.name = data.nickname || data.username || ''
-            return
-          }
-        } catch (error) {
-          console.error('获取用户信息失败:', error)
-        }
-      }
-
-      // 后端不可用时，使用本地存储作为备用
-      const users = JSON.parse(localStorage.getItem('users') || '[]')
-      const user = users.find(u => u.username === username)
-
-      if (user) {
-        this.form.name = user.user_name || ''
-        this.form.tel = user.tele || ''
-        this.form.email = user.email || ''
-        this.userInfo.password = user.password || ''
-        this.userInfo.id = user.id || userId || ''
+      this.userId = userId
+      try {
+        const profile = await fetchCurrentUserProfile()
+        this.userId = String(profile.user_id)
+        this.form.name = profile.user_name || ''
+        this.form.sex = String(profile.user_sex ?? 1)
+        this.form.tel = profile.user_tel || ''
+      } catch (error) {
+        console.error('获取用户详细信息失败:', error)
+        this.$message.error('加载用户信息失败')
       }
     },
     async onSubmit () {
-      const accessToken = localStorage.getItem('accessToken')
-      const objectId = localStorage.getItem('objectId') || this.userInfo.id
-      const userId = localStorage.getItem('user_id') || this.userInfo.id
-
-      if (!objectId && !userId) {
+      if (!this.userId) {
         this.$message.error('用户不存在')
         return
       }
-
-      const targetId = objectId || userId
-
-      // 构建更新数据 - 按照接口文档字段名
-      const updateData = {
-        nickname: this.form.name,
-        phone: this.form.tel,
-        email: this.form.email
+      if (!this.form.oldPassword) {
+        this.$message.error('请输入原密码')
+        return
       }
 
-      // 优先尝试调用后端API
-      if (accessToken) {
-        try {
-          const response = await request.put(`/api/v1/users/${targetId}`, updateData, {
-            headers: {
-              Authorization: `Bearer ${accessToken}`
-            }
-          })
-
-          if (response.data.code === 200) {
-            if (this.form.name) {
-              localStorage.setItem('user_name', this.form.name)
-            }
-            this.$message.success('修改成功!')
-            this.pageInit()
-            return
-          } else {
-            this.$message.error(response.data.message || '修改失败')
-            return
-          }
-        } catch (error) {
-          console.error('修改用户信息失败:', error)
-          this.saveToLocalStorage()
-          return
+      try {
+        const response = await updateUserProfile({
+          id: this.userId,
+          oldPassword: this.form.oldPassword,
+          name: this.form.name,
+          sex: this.form.sex,
+          tel: this.form.tel
+        })
+        parseJsonResult(response)
+        localStorage.setItem('user_name', this.form.name)
+        this.form.oldPassword = ''
+        this.$message.success('修改成功!')
+        this.pageInit()
+      } catch (error) {
+        console.error('修改用户信息失败:', error)
+        if (error.code === 6000) {
+          this.$message.error('原密码错误')
+        } else if (error.code === 5000) {
+          this.$message.error('用户名已存在，请更换')
+        } else {
+          this.$message.error(error.message || '修改失败')
         }
       }
-
-      // 后端不可用时，使用本地存储作为备用
-      this.saveToLocalStorage()
-    },
-    saveToLocalStorage () {
-      const username = localStorage.getItem('username')
-      const users = JSON.parse(localStorage.getItem('users') || '[]')
-      const index = users.findIndex(u => u.username === username)
-
-      if (index === -1) {
-        this.$message.error('用户不存在')
-        return
-      }
-
-      const localUpdateData = {
-        user_name: this.form.name,
-        tele: this.form.tel,
-        email: this.form.email
-      }
-
-      users[index] = { ...users[index], ...localUpdateData }
-      localStorage.setItem('users', JSON.stringify(users))
-
-      if (this.form.name) {
-        localStorage.setItem('user_name', this.form.name)
-      }
-
-      this.$message.warning('本地数据修改成功!')
     },
     resetForm () {
+      this.form.oldPassword = ''
       this.pageInit()
     }
   }
@@ -299,9 +211,5 @@ export default {
   border-radius: 8px;
   padding: 10px 24px;
   margin-left: 12px;
-}
-
-:deep(.el-radio) {
-  margin-right: 24px;
 }
 </style>

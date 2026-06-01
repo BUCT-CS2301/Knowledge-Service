@@ -9,9 +9,9 @@ import java.util.List;
 
 @Repository
 public interface RelicRepository extends Neo4jRepository<RelicNode, Long> {
-    @Query("MATCH (n:Relic) RETURN n LIMIT $limit")
+    @Query("MATCH (n:Artifact) RETURN n LIMIT $limit")
     List<RelicNode> findRelicsWithLimit(Integer limit);
 
-    @Query("MATCH (n:Relic) WHERE n.title CONTAINS $keyword RETURN n")
+    @Query("MATCH (n:Artifact) WHERE n.title CONTAINS $keyword RETURN n")
     List<RelicNode> searchRelicsByKeyword(String keyword);
 }

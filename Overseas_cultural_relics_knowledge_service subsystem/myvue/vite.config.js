@@ -16,8 +16,19 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://localhost:8085',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
+        changeOrigin: true
+      },
+      '/search': {
+        target: 'http://localhost:8085',
+        changeOrigin: true
+      },
+      '/users': {
+        target: 'http://localhost:8085',
+        changeOrigin: true
+      },
+      '/user_admin': {
+        target: 'http://localhost:8085',
+        changeOrigin: true
       }
     }
   }

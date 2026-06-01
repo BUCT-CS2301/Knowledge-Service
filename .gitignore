@@ -8,3 +8,7 @@ node_modules/
 dist/
 out/
 .DS_Store
+.venv/
+**/.venv-sync/
+nohup.out
+**/nohup.out

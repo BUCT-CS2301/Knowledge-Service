@@ -64,10 +64,10 @@
 
           <!-- 评论列表 -->
           <div class="comment-list">
-            <div class="comment-item" v-for="comment in comments" :key="comment.id">
+            <div class="comment-item" v-for="comment in comments" :key="comment.id || comment.cid">
               <div class="comment-header">
-                <span class="comment-author">{{ comment.userName || '匿名用户' }}</span>
-                <span class="comment-time">{{ comment.time }}</span>
+                <span class="comment-author">{{ comment.userName || comment.username || '匿名用户' }}</span>
+                <span class="comment-time">{{ formatCommentTime(comment.time || comment.created_time) }}</span>
               </div>
               <p class="comment-content">{{ comment.content }}</p>
             </div>
@@ -87,7 +87,9 @@
 <script>
 import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
-import axios from 'axios'
+import request from '@/api/request'
+import { collectRelic, uncollectRelic, getRelicComments } from '@/api/relic'
+import { relicKeyFromObjectId } from '@/utils/relicKey'
 
 export default {
   name: 'relicDetail',
@@ -104,7 +106,8 @@ export default {
       },
       isCollected: false,
       newComment: '',
-      comments: []
+      comments: [],
+      relicObjectId: ''
     }
   },
   created () {
@@ -113,10 +116,34 @@ export default {
     this.checkCollectionStatus()
   },
   methods: {
+    getRelicKey () {
+      if (this.relicObjectId) return String(relicKeyFromObjectId(this.relicObjectId))
+      const relicId = this.$route.query.id
+      if (relicId && /^\d+$/.test(String(relicId))) return String(relicId)
+      return ''
+    },
+    applyRelicSnapshot (cached) {
+      if (!cached) return
+      this.relic = cached
+      this.relicObjectId = cached.objectId || this.$route.query.objectId || ''
+    },
     loadRelicDetail () {
       const relicId = this.$route.query.id
       const relicName = this.$route.query.name
 
+      const from = this.$route.query.from
+      if (from === 'timeline' || from === 'kg') {
+        const storageKey = from === 'kg' ? 'graphRelicDetail' : 'timelineRelicDetail'
+        try {
+          const cached = JSON.parse(sessionStorage.getItem(storageKey) || 'null')
+          if (cached && (!relicName || cached.name === relicName)) {
+            this.applyRelicSnapshot(cached)
+            return
+          }
+        } catch (_) { /* ignore */ }
+      }
+
+      this.relicObjectId = this.$route.query.objectId || ''
       // 优先使用静态默认数据，让页面立即显示
       this.relic = this.getDefaultRelic(relicId, relicName)
 
@@ -125,7 +152,7 @@ export default {
     },
     async fetchFromBackend (relicId, relicName) {
       try {
-        const response = await axios.get(`/api/v1/data/relics/${relicId}`, {
+        const response = await request.get(`/api/v1/data/relics/${relicId}`, {
           timeout: 3000  // 3秒超时
         })
         if (response.data.code === 200) {
@@ -149,6 +176,7 @@ export default {
       e.target.src = 'https://via.placeholder.com/800x400?text=Image+Not+Available'
     },
     getDefaultRelic (id, name) {
+      const q = this.$route.query
       const relics = {
         149146: {
           id: 149146,
@@ -183,7 +211,20 @@ export default {
           period: 'early 1400s'
         }
       }
-      return relics[id] || {
+      if (relics[id]) {
+        return relics[id]
+      }
+      if (q.name || q.museum || q.image || q.description || q.period) {
+        return {
+          id: id || 'timeline',
+          name: q.name || name || '未知文物',
+          image: q.image || 'https://picsum.photos/seed/relic/400/300',
+          description: q.description || '暂无详细描述',
+          museum: q.museum || '未知博物馆',
+          period: q.period || '未知年代'
+        }
+      }
+      return {
         id: id,
         name: name || '未知文物',
         image: 'https://picsum.photos/seed/relic/400/300',
@@ -192,45 +233,105 @@ export default {
         period: '未知年代'
       }
     },
-    loadComments () {
-      const relicId = this.$route.query.id
-      const allComments = JSON.parse(localStorage.getItem('comments') || '[]')
-      this.comments = allComments.filter(c => c.relicId == relicId)
+    formatCommentTime (value) {
+      if (!value) return ''
+      const d = new Date(value)
+      return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleString('zh-CN')
     },
-    checkCollectionStatus () {
-      if (!localStorage.getItem('username')) return
-      const relicId = this.$route.query.id
-      const collections = JSON.parse(localStorage.getItem('collections') || '[]')
-      this.isCollected = collections.some(c => c.relicId == relicId)
+    mapCommentList (list) {
+      return (list || []).map(item => ({
+        id: item.cid,
+        cid: item.cid,
+        userName: item.username,
+        username: item.username,
+        content: item.content,
+        time: item.created_time,
+        created_time: item.created_time
+      }))
     },
-    toggleCollect () {
+    async loadComments () {
+      const relicKey = this.getRelicKey()
+      if (!relicKey) {
+        const relicId = this.$route.query.id
+        const allComments = JSON.parse(localStorage.getItem('comments') || '[]')
+        this.comments = allComments.filter(c => c.relicId == relicId)
+        return
+      }
+      try {
+        const res = await getRelicComments({
+          rid: relicKey,
+          objectId: this.relicObjectId || undefined
+        })
+        if (res.data.state === 200) {
+          this.comments = this.mapCommentList(res.data.data)
+        }
+      } catch (_) {
+        const allComments = JSON.parse(localStorage.getItem('comments') || '[]')
+        this.comments = allComments.filter(c => c.relicId == this.$route.query.id)
+      }
+    },
+    async checkCollectionStatus () {
+      const userId = localStorage.getItem('username')
+      if (!userId) return
+      const objectId = this.relicObjectId
+      if (objectId) {
+        try {
+          const response = await request.post('/search/detailByObjectId', { objectId, uid: userId })
+          if (response.data.state === 200 && response.data.data) {
+            this.isCollected = response.data.data.if_collect === 1
+          }
+        } catch (_) { /* ignore */ }
+        return
+      }
+      const relicKey = this.getRelicKey()
+      if (!relicKey) return
+      try {
+        const response = await request.post('/search/searchById', { rid: relicKey, uid: userId })
+        if (response.data.state === 200 && response.data.data) {
+          this.isCollected = response.data.data.if_collect === 1
+        }
+      } catch (_) { /* ignore */ }
+    },
+    async toggleCollect () {
       if (!localStorage.getItem('username')) {
         this.$message.warning('请先登录')
         return
       }
-
-      const relicId = this.$route.query.id
-      const collections = JSON.parse(localStorage.getItem('collections') || '[]')
-      const index = collections.findIndex(c => c.relicId == relicId)
-
-      if (index !== -1) {
-        collections.splice(index, 1)
-        localStorage.setItem('collections', JSON.stringify(collections))
-        this.isCollected = false
-        this.$message.success('取消收藏成功')
-      } else {
-        collections.push({
-          id: Date.now(),
-          relicId: relicId,
-          relicName: this.relic.name,
-          relicImage: this.relic.image,
-          userId: localStorage.getItem('user_id'),
-          userName: localStorage.getItem('user_name'),
-          time: new Date().toLocaleString()
-        })
-        localStorage.setItem('collections', JSON.stringify(collections))
-        this.isCollected = true
-        this.$message.success('收藏成功')
+      const userId = localStorage.getItem('username')
+      const objectId = this.relicObjectId
+      const relicKey = this.getRelicKey()
+      if (objectId) {
+        try {
+          if (this.isCollected) {
+            await uncollectRelic({ uid: userId, objectId })
+            this.isCollected = false
+            this.$message.success('取消收藏成功')
+          } else {
+            await collectRelic({ uid: userId, objectId, relicName: this.relic.name })
+            this.isCollected = true
+            this.$message.success('收藏成功')
+          }
+        } catch (error) {
+          this.$message.error('收藏操作失败')
+        }
+        return
+      }
+      if (!relicKey) {
+        this.$message.info('该文物暂不支持收藏')
+        return
+      }
+      try {
+        if (this.isCollected) {
+          await uncollectRelic({ uid: userId, rid: relicKey })
+          this.isCollected = false
+          this.$message.success('取消收藏成功')
+        } else {
+          await collectRelic({ uid: userId, rid: relicKey, relicName: this.relic.name })
+          this.isCollected = true
+          this.$message.success('收藏成功')
+        }
+      } catch (error) {
+        this.$message.error('收藏操作失败')
       }
     },
     focusComment () {
@@ -246,22 +347,45 @@ export default {
         return
       }
 
-      const relicId = this.$route.query.id
-      const allComments = JSON.parse(localStorage.getItem('comments') || '[]')
-      const newCommentObj = {
-        id: Date.now(),
-        relicId: relicId,
-        relicName: this.relic.name,
-        userId: localStorage.getItem('user_id'),
-        userName: localStorage.getItem('user_name') || localStorage.getItem('username'),
-        content: this.newComment,
-        time: new Date().toLocaleString()
+      const userId = localStorage.getItem('username')
+      const relicKey = this.getRelicKey()
+      if (!relicKey) {
+        const relicId = this.$route.query.id
+        const allComments = JSON.parse(localStorage.getItem('comments') || '[]')
+        const newCommentObj = {
+          id: Date.now(),
+          relicId: relicId,
+          relicName: this.relic.name,
+          userId,
+          userName: localStorage.getItem('user_name') || userId,
+          content: this.newComment,
+          time: new Date().toLocaleString()
+        }
+        allComments.push(newCommentObj)
+        localStorage.setItem('comments', JSON.stringify(allComments))
+        this.comments.push(newCommentObj)
+        this.newComment = ''
+        this.$message.success('评论成功')
+        return
       }
-      allComments.push(newCommentObj)
-      localStorage.setItem('comments', JSON.stringify(allComments))
-      this.comments.push(newCommentObj)
-      this.newComment = ''
-      this.$message.success('评论成功')
+
+      request.post('/search/searchById/comment', {
+        uid: userId,
+        rid: relicKey,
+        content: this.newComment,
+        objectId: this.relicObjectId || undefined,
+        relicName: this.relic.name
+      }).then(async (response) => {
+        if (response.data.state === 200) {
+          this.$message.success('评论成功')
+          this.newComment = ''
+          await this.loadComments()
+        } else {
+          this.$message.warning(response.data.message || '评论失败')
+        }
+      }).catch(() => {
+        this.$message.error('评论失败')
+      })
     }
   }
 }

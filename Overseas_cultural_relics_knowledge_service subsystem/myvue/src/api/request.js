@@ -10,7 +10,10 @@ const request = axios.create({
 request.interceptors.response.use(
   (response) => response,
   (error) => {
-    ElMessage.error(error.message || '网络请求失败')
+    // HTTP 4xx/5xx 由页面自行提示，避免与个人中心等处重复弹窗
+    if (!error.response) {
+      ElMessage.error(error.message || '网络请求失败')
+    }
     return Promise.reject(error)
   }
 )

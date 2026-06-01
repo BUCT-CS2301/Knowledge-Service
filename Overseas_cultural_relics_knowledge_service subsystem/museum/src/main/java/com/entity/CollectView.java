@@ -7,7 +7,8 @@ public class CollectView implements Serializable {
     Integer uid;//用户id
     Integer rid;//文物id
     String username;//用户名
-    String relicname;//文物id
+    String relicname;//文物名
+    String relicObjectId;// Neo4j UUID
 
     public Integer getId() {
         return id;
@@ -47,6 +48,14 @@ public class CollectView implements Serializable {
 
     public void setRelicname(String relicname) {
         this.relicname = relicname;
+    }
+
+    public String getRelicObjectId() {
+        return relicObjectId;
+    }
+
+    public void setRelicObjectId(String relicObjectId) {
+        this.relicObjectId = relicObjectId;
     }
 
     @Override

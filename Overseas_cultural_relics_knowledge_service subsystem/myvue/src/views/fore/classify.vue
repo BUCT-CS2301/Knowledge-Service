@@ -12,8 +12,9 @@
 
       <el-row :gutter="12">
         <el-col v-for="(item, index) in classifyList" :key="index" class="classify-layout" :span="6">
-            <el-card shadow="hover" class="badge" :style="{ backgroundImage: 'url(' + item.bgUrl + ')' }">
-            </el-card>
+          <el-card shadow="hover" class="badge" :body-style="{ padding: '0' }">
+            <img :src="item.bgUrl" class="classify-img" :alt="item.title">
+          </el-card>
         </el-col>
       </el-row>
       <div style="display: flex" >
@@ -38,6 +39,10 @@
 <script>
 import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
+import dynastyImg from '@/assets/index/1.png'
+import materialImg from '@/assets/index/2.png'
+import museumImg from '@/assets/index/3.png'
+import usageImg from '@/assets/index/4.png'
 
 export default {
   components: {
@@ -47,26 +52,10 @@ export default {
   data () {
     return {
       classifyList: [
-        {
-          key: 'dynasty',
-          title: '朝代',
-          bgUrl: 'https://tse1-mm.cn.bing.net/th/id/OIP-C.8cF-Es_gVFYtmMwzaHoKIwHaFt?pid=ImgDet&rs=1'
-        },
-        {
-          key: 'material',
-          title: '材质',
-          bgUrl: 'https://tse1-mm.cn.bing.net/th/id/R-C.03057cce39380cf934605e8d4bfb65ef?rik=BP3kzTvHjqD6ZA&riu=http%3a%2f%2fimg01.baimao.com%2fM00%2f54%2f88%2fwKgAFFuHOgGAD6ofAAC8a81zVbQ551.jpg&ehk=%2bCiN%2brqmeEMrr2CGAsO9thQUEsDB3Y0izk7piXsNLTw%3d&risl=&pid=ImgRaw&r=0'
-        },
-        {
-          key: 'museum',
-          title: '博物馆',
-          bgUrl: 'https://tse1-mm.cn.bing.net/th/id/R-C.eeefca935019f71260e6a9fcb1df0f63?rik=MoqnjhKYBCvfgg&riu=http%3a%2f%2fimg.pconline.com.cn%2fimages%2fupload%2fupc%2ftx%2fphotoblog%2f1309%2f20%2fc87%2f25937376_25937376_1136074994421_mthumb.jpg&ehk=8vdy1RIbqowuPXHaMdMI283TboT8kZ1A3vQRlVMH14E%3d&risl=&pid=ImgRaw&r=0'
-        },
-        {
-          key: 'usage',
-          title: '用途',
-          bgUrl: 'https://tse4-mm.cn.bing.net/th/id/OIP-C.5YOZG6psKqpAA89M7o3oaAHaGY?pid=ImgDet&rs=1'
-        }
+        { key: 'dynasty', title: '朝代', bgUrl: dynastyImg },
+        { key: 'material', title: '材质', bgUrl: materialImg },
+        { key: 'museum', title: '博物馆', bgUrl: museumImg },
+        { key: 'usage', title: '用途', bgUrl: usageImg }
       ]
     }
   },
@@ -114,16 +103,15 @@ export default {
 }
 
 .badge {
-  display: -moz-box;
-  display: -webkit-box;
-
-  -moz-box-align: center;
-  -webkit-box-align: center;
-
-  -moz-box-pack: center;
-  -webkit-box-pack: center;
-
+  overflow: hidden;
   height: 150px;
+}
+
+.classify-img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  display: block;
 }
 
 a {

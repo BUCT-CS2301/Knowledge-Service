@@ -4,5 +4,10 @@ export function getApiRoot () {
   if (fromEnv !== undefined && fromEnv !== '') {
     return fromEnv.replace(/\/$/, '')
   }
-  return 'http://60.205.14.101:8080'
+  // 生产构建未指定 VITE_API_BASE 时走同域 80 端口（Nginx → 8085），
+  // 避免浏览器直连 8080（安全组常仅放行特定 IP 段，如 124.126.0.0/16）。
+  if (import.meta.env.PROD) {
+    return ''
+  }
+  return 'http://127.0.0.1:8085'
 }

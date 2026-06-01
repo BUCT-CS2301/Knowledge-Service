@@ -3,31 +3,23 @@ package com.entity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.neo4j.ogm.annotation.GeneratedValue;
-import org.neo4j.ogm.annotation.Id;
-import org.neo4j.ogm.annotation.NodeEntity;
-import org.neo4j.ogm.annotation.Property;
+import org.springframework.data.neo4j.core.schema.GeneratedValue;
+import org.springframework.data.neo4j.core.schema.Id;
+import org.springframework.data.neo4j.core.schema.Node;
 
 import java.io.Serializable;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@NodeEntity(label = "Period")
+@Node("Period")
 public class PeriodNode implements Serializable {
     @Id
     @GeneratedValue
     private Long id;
 
-    @Property
     private String name;
-
-    @Property
     private String startYear;
-
-    @Property
     private String endYear;
-
-    @Property
     private String description;
 }

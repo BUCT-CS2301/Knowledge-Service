@@ -31,7 +31,7 @@
 </template>
 
 <script>
-import axios from 'axios'
+import request from '@/api/request'
 var storage = window.localStorage
 export default {
   data () {
@@ -53,7 +53,7 @@ export default {
   },
   methods: {
     pageInit () {
-      axios.post('http://localhost:8080/search/searchById', this.form
+      request.post('/search/searchById', this.form
       ).then((response) => {
         this.name = response.data.data.object_name
         this.pic = response.data.data.img_url

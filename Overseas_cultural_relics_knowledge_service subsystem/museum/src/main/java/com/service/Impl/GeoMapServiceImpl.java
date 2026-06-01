@@ -25,10 +25,11 @@ public class GeoMapServiceImpl implements GeoMapService {
     // 预设的博物馆真实经纬度坐标 (纬度, 经度)
     private static final Map<String, double[]> COORDINATES = new HashMap<>();
     static {
-        COORDINATES.put("大英博物馆", new double[]{51.5074, -0.1278});      // 伦敦
-        COORDINATES.put("大都会博物馆", new double[]{40.7794, -73.9632});   // 纽约
-        COORDINATES.put("卢浮宫", new double[]{48.8606, 2.3376});           // 巴黎
-        COORDINATES.put("东京国立博物馆", new double[]{35.7100, 139.7691}); // 东京
+        COORDINATES.put("大英博物馆", new double[]{51.5074, -0.1278});
+        COORDINATES.put("大都会博物馆", new double[]{40.7794, -73.9632});
+        COORDINATES.put("大都会艺术博物馆", new double[]{40.7794, -73.9632});
+        COORDINATES.put("卢浮宫", new double[]{48.8606, 2.3376});
+        COORDINATES.put("东京国立博物馆", new double[]{35.7100, 139.7691});
         COORDINATES.put("维多利亚博物馆", new double[]{-37.8136, 144.9631}); // 墨尔本
         COORDINATES.put("柏林亚洲艺术博物馆", new double[]{52.5200, 13.4050}); // 柏林
         COORDINATES.put("波士顿美术馆", new double[]{42.3398, -71.0942});    // 波士顿
@@ -37,39 +38,40 @@ public class GeoMapServiceImpl implements GeoMapService {
 
     @Override
     public List<Map<String, Object>> getMuseumLocations() {
-        List<Map<String, Object>> locations = new ArrayList<>();
-        List<MuseumNode> museums = museumRepository.findAll();
-        List<RelicNode> relics = relicRepository.findAll();
+        try {
+            List<Map<String, Object>> locations = new ArrayList<>();
+            List<MuseumNode> museums = museumRepository.findAll();
+            List<RelicNode> relics = relicRepository.findAll();
 
-        for (MuseumNode museum : museums) {
-            String museumName = museum.getNameCn() != null ? museum.getNameCn() : museum.getName();
-            double[] coord = COORDINATES.getOrDefault(museumName, new double[]{400, 200});
-            
-            // 统计该博物馆的文物数量
-            int count = 0;
-            for (RelicNode relic : relics) {
-                if (relic.getMuseumId() != null && relic.getMuseumId().equals(museum.getObjectId())) {
-                    count++;
+            for (MuseumNode museum : museums) {
+                String museumName = museum.getNameCn() != null ? museum.getNameCn() : museum.getName();
+                double[] coord = COORDINATES.getOrDefault(museumName, new double[]{400, 200});
+
+                int count = 0;
+                for (RelicNode relic : relics) {
+                    if (relic.getMuseumId() != null && relic.getMuseumId().equals(museum.getObjectId())) {
+                        count++;
+                    }
                 }
+
+                Map<String, Object> location = new HashMap<>();
+                location.put("name", museumName);
+                location.put("city", museum.getLocation() != null ? museum.getLocation().split(",")[0] : "");
+                location.put("country", museum.getLocation() != null && museum.getLocation().contains(",") ? museum.getLocation().split(",")[1].trim() : "");
+                location.put("lat", coord[0]);
+                location.put("lng", coord[1]);
+                location.put("count", count > 0 ? count : getDefaultCount(museumName));
+                locations.add(location);
             }
 
-            Map<String, Object> location = new HashMap<>();
-            location.put("name", museumName);
-            location.put("city", museum.getLocation() != null ? museum.getLocation().split(",")[0] : "");
-            location.put("country", museum.getLocation() != null ? museum.getLocation().split(",")[1] : "");
-            location.put("lat", coord[0]);  // 纬度
-            location.put("lng", coord[1]);  // 经度
-            location.put("count", count > 0 ? count : getDefaultCount(museumName));
-            
-            locations.add(location);
+            if (!locations.isEmpty()) {
+                return locations;
+            }
+        } catch (Exception e) {
+            System.out.println("Neo4j不可用，GeoMap 返回示例数据: " + e.getMessage());
         }
 
-        // 如果数据库中没有博物馆数据，使用模拟数据
-        if (locations.isEmpty()) {
-            locations = getMockData();
-        }
-
-        return locations;
+        return getMockData();
     }
 
     private int getDefaultCount(String museumName) {

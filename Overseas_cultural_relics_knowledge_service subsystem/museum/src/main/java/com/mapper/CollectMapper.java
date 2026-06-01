@@ -17,6 +17,7 @@ public interface CollectMapper {
     Collect findByid(Integer id);
     //查找用户对文物收藏记录
     Collect findByuidandrid(Integer uid,Integer rid);
+    Collect findByUidAndObjectId(Integer uid, String objectId);
     //显示查找到的收藏
     ArrayList<CollectView> findByuid(Integer uid);
 }

@@ -96,6 +96,11 @@ const routes = [
     component: () => import('../views/visualization/Map.vue')
   },
   {
+    path: '/visualization/dashboard',
+    name: 'dashboard',
+    component: () => import('../views/visualization/Dashboard.vue')
+  },
+  {
     path: '/visualization/test-graph',
     name: 'testGraph',
     component: () => import('../views/visualization/TestGraph.vue')

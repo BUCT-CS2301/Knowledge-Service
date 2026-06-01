@@ -1,0 +1,436 @@
+cat > "/home/ubuntu/课设/课设/Knowledge-Service/Overseas_cultural_relics_knowledge_service subsystem/museum/index.html" << 'EOF'
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>海外藏中国文物 - 三博物馆联合展示</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus/dist/index.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #f5f7fa; font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif; }
+    .app-container { max-width: 1400px; margin: 0 auto; padding: 20px 24px 48px; }
+    .header-section { background: white; border-radius: 24px; padding: 20px 28px; margin-bottom: 28px; box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
+    .filter-bar { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
+    .filter-bar .el-select { width: 200px; }
+    .smart-search-area { background: #faf9f8; border-radius: 60px; padding: 4px 8px 4px 20px; display: flex; align-items: center; gap: 12px; border: 1px solid #e4e7eb; flex: 1; min-width: 280px; }
+    .smart-search-area:focus-within { border-color: #b8860b; box-shadow: 0 0 0 2px rgba(184,134,11,0.2); }
+    .search-input { flex: 1; border: none; outline: none; font-size: 15px; background: transparent; padding: 10px 0; }
+    .art-card { border-radius: 16px; overflow: hidden; cursor: pointer; transition: all 0.25s ease; height: 100%; display: flex; flex-direction: column; }
+    .art-card:hover { transform: translateY(-5px); box-shadow: 0 20px 28px -12px rgba(0,0,0,0.2); }
+    .card-img { width: 100%; height: 200px; object-fit: cover; background: #e9ecef; display: block; }
+    .detail-img { width: 100%; max-height: 520px; object-fit: contain; background: #1e2a2e; border-radius: 20px; cursor: pointer; }
+    .recommend-list { display: flex; gap: 20px; overflow-x: auto; padding: 12px 0 20px; }
+    .recommend-item { width: 170px; flex-shrink: 0; cursor: pointer; transition: transform 0.2s; }
+    .recommend-item:hover { transform: translateY(-5px); }
+    .recommend-img { width: 100%; height: 130px; object-fit: cover; border-radius: 12px 12px 0 0; }
+    .empty-box { text-align: center; padding: 60px 0; color: #8d9aac; }
+    .pagination-wrap { margin-top: 36px; display: flex; justify-content: center; }
+    h3 { font-size: 1.3rem; font-weight: 600; margin: 28px 0 16px; padding-left: 14px; border-left: 4px solid #b8860b; }
+    .search-icon-btn { background: #b8860b; border: none; color: white; border-radius: 40px; padding: 8px 20px; cursor: pointer; font-weight: 500; transition: 0.2s; }
+    .search-icon-btn:hover { background: #9b6e0a; }
+    .clear-search { color: #8c9aa8; cursor: pointer; font-size: 14px; }
+    .image-viewer-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .image-viewer-img { max-width: 90vw; max-height: 90vh; object-fit: contain; }
+    .image-viewer-close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; }
+    .desc-preview { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 12px; color: #666; margin-top: 8px; }
+    .loading-overlay { text-align: center; padding: 80px; }
+    .museum-stat { background: #f9f5f0; border-radius: 12px; padding: 8px 16px; display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; }
+    .museum-stat-item { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; padding: 6px 14px; border-radius: 30px; transition: 0.2s; }
+    .museum-stat-item:hover { background: #f0e8dc; }
+    .museum-stat-item.active { background: #b8860b20; font-weight: 500; }
+    .museum-dot { width: 12px; height: 12px; border-radius: 12px; }
+    .museum-badge { font-size: 10px; padding: 2px 8px; border-radius: 12px; display: inline-block; font-weight: 500; }
+    .error-box { text-align: center; padding: 60px; color: #d9534f; background: #fff; border-radius: 20px; }
+    .total-count { font-size: 14px; color: #b8860b; font-weight: bold; }
+    .progress-info { margin: 10px 0; font-size: 12px; color: #666; text-align: center; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="app-container">
+    <div v-if="!showDetail">
+      <el-page-header @back="()=>{}" content="海外藏中国文物 · 三博物馆联合展示">
+        <template #content>
+          <span style="font-weight: 500; font-size: 18px;"> 克利夫兰 | 尼尔森 | 宾大博物馆</span>
+        </template>
+      </el-page-header>
+    </div>
+    <div v-else style="margin-bottom: 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+      <el-button text type="primary" @click="goBack">
+        <el-icon><ArrowLeft /></el-icon> 返回文物列表
+      </el-button>
+      <span style="font-size: 18px; font-weight: 500;">文物深度鉴赏</span>
+    </div>
+
+    <div v-if="!showDetail">
+      <div class="header-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div style="font-weight: 600; font-size: 18px;">🏛️ 海外藏中国文物 · <span class="total-count">共 {{ allData.length }} 件</span></div>
+          <div class="smart-search-area">
+            <input type="text" v-model="smartSearchKeyword" class="search-input" placeholder="🔍 搜索文物名称/年代/类型/描述..." @keyup.enter="performSmartSearch">
+            <button class="search-icon-btn" @click="performSmartSearch">搜索</button>
+            <span v-if="smartSearchKeyword" class="clear-search" @click="clearSearch">✖</span>
+          </div>
+        </div>
+
+        <div class="museum-stat">
+          <div class="museum-stat-item" :class="{ active: filterMuseum === '' }" @click="filterMuseum = ''; handleFilterChange()">
+            <span class="museum-dot" style="background: #888;"></span>
+            <span>全部 ({{ allData.length }})</span>
+          </div>
+          <div class="museum-stat-item" v-for="(count, museumName) in museumCount" :key="museumName" :class="{ active: filterMuseum === museumName }" @click="filterMuseum = museumName; handleFilterChange()">
+            <span class="museum-dot" :style="{ background: getMuseumColor(museumName) }"></span>
+            <span>{{ getMuseumShort(museumName) }} ({{ count }})</span>
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <el-select v-model="filterPeriod" @change="handleFilterChange" placeholder="年代/时期" clearable filterable>
+            <el-option label="全部年代" value=""></el-option>
+            <el-option v-for="p in periodOptions" :key="p" :label="p" :value="p"></el-option>
+          </el-select>
+          <el-select v-model="filterType" @change="handleFilterChange" placeholder="文物类型" clearable filterable>
+            <el-option label="全部类型" value=""></el-option>
+            <el-option v-for="t in typeOptions" :key="t" :label="t" :value="t"></el-option>
+          </el-select>
+          <el-select v-model="filterMaterial" @change="handleFilterChange" placeholder="材质" clearable filterable>
+            <el-option label="全部材质" value=""></el-option>
+            <el-option v-for="m in materialOptions" :key="m" :label="m" :value="m"></el-option>
+          </el-select>
+          <el-select v-model="sortBy" @change="handleFilterChange" placeholder="排序方式">
+            <el-option label="默认顺序" value=""></el-option>
+            <el-option label="文物名称 A-Z" value="name_asc"></el-option>
+            <el-option label="年代从早到晚" value="period_early"></el-option>
+            <el-option label="年代从晚到早" value="period_late"></el-option>
+          </el-select>
+        </div>
+        <div v-if="isSearchMode" style="margin-top: 14px; font-size:13px; background:#f4efdf; padding: 8px 16px; border-radius: 50px;">
+          🔎 智能搜索结果，共 {{ total }} 项匹配。 <a href="javascript:void(0)" @click="resetToFullList">清除搜索</a>
+        </div>
+        <div class="progress-info" v-if="loading">正在加载数据，请稍候...</div>
+        <div style="margin-top: 12px; text-align: right; font-size: 12px; color: #888;">当前显示 {{ total }} 件文物</div>
+      </div>
+
+      <el-row :gutter="24" v-if="loading"><div class="loading-overlay"><el-icon><Loading /></el-icon> 加载数据中...</div></el-row>
+      <div v-else-if="errorMsg" class="error-box">
+        <p>{{ errorMsg }}</p>
+      </div>
+      <el-row :gutter="24" v-else-if="pageList.length">
+        <el-col :xs="12" :sm="8" :md="6" :lg="6" v-for="item in pageList" :key="item.object_id" style="margin-bottom: 28px;">
+          <el-card class="art-card" shadow="hover" @click="openDetail(item)" :body-style="{ padding: '0px' }">
+            <img :src="getImageUrl(item)" class="card-img" :alt="item.title" loading="lazy" @error="handleImageError" referrerpolicy="no-referrer">
+            <div style="padding: 12px;">
+              <h4 style="margin:0 0 6px; font-size: 0.95rem; font-weight: 600; line-height:1.3;">{{ truncateTitle(item.title) }}</h4>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap; gap: 4px;">
+                <span style="background: #f0e7db; padding:2px 8px; border-radius: 20px; font-size:11px;">{{ item.period || '时期不详' }}</span>
+                <span class="museum-badge" :style="{ background: getMuseumColor(item.museum) + '20', color: getMuseumColor(item.museum) }">{{ getMuseumShort(item.museum) }}</span>
+              </div>
+              <div><el-tag size="small" effect="plain">{{ item.type || '未知类型' }}</el-tag></div>
+              <div class="desc-preview">{{ truncateDesc(item.description) }}</div>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
+      <div v-else class="empty-box"><el-empty description="未找到相关文物"></el-empty></div>
+      <div class="pagination-wrap" v-if="total > 0 && !loading">
+        <el-pagination v-model:current-page="page" :page-size="pageSize" :total="total" layout="prev, pager, next, jumper" @current-change="handlePageChange" background></el-pagination>
+      </div>
+    </div>
+
+    <div v-if="showDetail && currentDetail">
+      <div style="text-align: center; background: #fefaf5; border-radius: 28px; padding: 12px;">
+        <img :src="getImageUrl(currentDetail)" class="detail-img" @click="previewImage" :alt="currentDetail.title" referrerpolicy="no-referrer">
+        <div style="margin-top: 8px; font-size:13px;">✧ 点击图片可放大预览 ✧</div>
+      </div>
+      <el-descriptions border :column="1" style="margin: 28px 0 20px; border-radius: 20px;">
+        <el-descriptions-item label="文物名称"><strong>{{ currentDetail.title }}</strong></el-descriptions-item>
+        <el-descriptions-item label="年代/时期">{{ currentDetail.period || '不详' }}</el-descriptions-item>
+        <el-descriptions-item label="文物类型">{{ currentDetail.type || '不详' }}</el-descriptions-item>
+        <el-descriptions-item label="材质">{{ currentDetail.material || '不详' }}</el-descriptions-item>
+        <el-descriptions-item label="收藏博物馆">{{ currentDetail.museum }}</el-descriptions-item>
+        <el-descriptions-item label="博物馆所在地">{{ currentDetail.location || '不详' }}</el-descriptions-item>
+        <el-descriptions-item label="尺寸">{{ currentDetail.dimensions || '不详' }}</el-descriptions-item>
+        <el-descriptions-item label="藏品编号">{{ currentDetail.accession_number || '不详' }}</el-descriptions-item>
+        <el-descriptions-item label="版权/来源">{{ currentDetail.credit_line || '不详' }}</el-descriptions-item>
+        <el-descriptions-item label="详细描述"><div style="line-height: 1.6; max-height: 300px; overflow-y: auto;">{{ currentDetail.description || '暂无描述' }}</div></el-descriptions-item>
+        <el-descriptions-item label="详情链接"><a :href="currentDetail.detail_url" target="_blank" style="color: #b8860b;">查看博物馆官网</a></el-descriptions-item>
+      </el-descriptions>
+
+      <h3>📌 相关文物推荐</h3>
+      <div class="recommend-list" v-if="recommendList.length">
+        <div class="recommend-item" v-for="rec in recommendList" :key="rec.object_id" @click="openDetail(rec)">
+          <el-card shadow="hover" :body-style="{ padding: '0px' }">
+            <img :src="getImageUrl(rec)" class="recommend-img" :alt="rec.title" @error="handleImageError" referrerpolicy="no-referrer">
+            <div style="padding: 8px; text-align: center;">
+              <div style="font-weight: 500; font-size:12px; line-height:1.3;">{{ truncateTitle(rec.title, 18) }}</div>
+              <div style="font-size: 10px; color:#b87c4b;">{{ rec.period || '时期不详' }}</div>
+            </div>
+          </el-card>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="previewVisible" class="image-viewer-mask" @click="closePreview">
+      <span class="image-viewer-close">&times;</span>
+      <img :src="previewUrl" class="image-viewer-img" @click.stop>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/element-plus/dist/index.full.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@element-plus/icons-vue"></script>
+
+<script>
+  const { createApp, reactive, onMounted, toRefs, ref, computed } = Vue;
+
+  const app = createApp({
+    setup() {
+      const state = reactive({
+        allData: [],
+        filterMuseum: "",
+        filterPeriod: "",
+        filterType: "",
+        filterMaterial: "",
+        sortBy: "",
+        showDetail: false,
+        currentDetail: null,
+        recommendList: [],
+        page: 1,
+        pageSize: 12,
+        total: 0,
+        displayList: [],
+        pageList: [],
+        smartSearchKeyword: "",
+        isSearchMode: false,
+        searchResultList: [],
+        previewVisible: false,
+        previewUrl: "",
+        loading: true,
+        errorMsg: ""
+      });
+
+      const periodOptions = ref([]);
+      const typeOptions = ref([]);
+      const materialOptions = ref([]);
+
+      const museumCount = computed(() => {
+        const counts = {};
+        state.allData.forEach(item => {
+          const museum = item.museum;
+          if (museum) counts[museum] = (counts[museum] || 0) + 1;
+        });
+        return counts;
+      });
+
+      const getMuseumColor = (museum) => {
+        const colors = ["#b8860b", "#2e8b57", "#1e6f9f", "#c0392b", "#8e44ad", "#d35400"];
+        let hash = 0;
+        if (!museum) return "#888";
+        for (let i = 0; i < museum.length; i++) {
+          hash = ((hash << 5) - hash) + museum.charCodeAt(i);
+          hash |= 0;
+        }
+        return colors[Math.abs(hash) % colors.length];
+      };
+
+      const getMuseumShort = (museum) => {
+        if (!museum) return "未知";
+        if (museum.includes("Cleveland")) return "克利夫兰";
+        if (museum.includes("Nelson")) return "尼尔森";
+        if (museum.includes("Pennsylvania")) return "宾大";
+        if (museum.length > 20) return museum.slice(0, 18) + "...";
+        return museum;
+      };
+
+      const getImageUrl = (item) => {
+        if (item.image_url && item.image_url !== '' && item.image_url !== 'null' && item.image_url !== 'undefined') {
+          return item.image_url;
+        }
+        return `https://picsum.photos/400/300?random=${item.object_id || Math.random()}`;
+      };
+      
+      const handleImageError = (e) => {
+        const img = e.target;
+        img.src = `https://picsum.photos/400/300?random=${Math.random()}`;
+      };
+
+      const getPeriodScore = (period) => {
+        if (!period) return 999;
+        const order = ["BCE", "c.", "early", "500s", "600s", "700s", "800s", "900s", "1000s", "1100s", "1200s", "1300s", "1400s", "1500s", "1600s", "1700s", "1800s", "1900s"];
+        for (let i = 0; i < order.length; i++) {
+          if (period.includes(order[i])) return i;
+        }
+        return 500;
+      };
+
+      const updateOptions = () => {
+        periodOptions.value = [...new Set(state.allData.map(i => i.period).filter(p => p))].sort();
+        typeOptions.value = [...new Set(state.allData.map(i => i.type).filter(t => t))].sort();
+        materialOptions.value = [...new Set(state.allData.map(i => i.material).filter(m => m && m.length < 100))].slice(0, 40);
+      };
+
+      const refreshDisplayList = () => {
+        let base = state.isSearchMode ? [...state.searchResultList] : [...state.allData];
+        if (state.filterMuseum) base = base.filter(i => i.museum === state.filterMuseum);
+        if (state.filterPeriod) base = base.filter(i => i.period === state.filterPeriod);
+        if (state.filterType) base = base.filter(i => i.type === state.filterType);
+        if (state.filterMaterial) base = base.filter(i => i.material && i.material.includes(state.filterMaterial));
+        if (state.sortBy === "name_asc") base.sort((a,b)=> (a.title || '').localeCompare(b.title || '', 'zh'));
+        else if (state.sortBy === "period_early") base.sort((a,b)=> (getPeriodScore(a.period) - getPeriodScore(b.period)));
+        else if (state.sortBy === "period_late") base.sort((a,b)=> (getPeriodScore(b.period) - getPeriodScore(a.period)));
+        state.displayList = base;
+        state.total = base.length;
+        state.page = 1;
+        updatePageList();
+      };
+
+      const updatePageList = () => {
+        const start = (state.page-1)*state.pageSize;
+        state.pageList = state.displayList.slice(start, start+state.pageSize);
+      };
+
+      const handlePageChange = (val) => { state.page = val; updatePageList(); };
+      const handleFilterChange = () => { refreshDisplayList(); };
+
+      const performSmartSearch = () => {
+        let keyword = state.smartSearchKeyword.trim().toLowerCase();
+        if (!keyword) { resetToFullList(); return; }
+        const matched = state.allData.filter(item => {
+          return (item.title && item.title.toLowerCase().includes(keyword)) ||
+                 (item.period && item.period.toLowerCase().includes(keyword)) ||
+                 (item.type && item.type.toLowerCase().includes(keyword)) ||
+                 (item.museum && item.museum.toLowerCase().includes(keyword)) ||
+                 (item.material && item.material.toLowerCase().includes(keyword)) ||
+                 (item.description && item.description.toLowerCase().includes(keyword));
+        });
+        state.searchResultList = matched;
+        state.isSearchMode = true;
+        state.filterMuseum = "";
+        state.filterPeriod = "";
+        state.filterType = "";
+        state.filterMaterial = "";
+        state.sortBy = "";
+        refreshDisplayList();
+      };
+
+      const resetToFullList = () => {
+        state.isSearchMode = false;
+        state.smartSearchKeyword = "";
+        state.searchResultList = [];
+        state.filterMuseum = "";
+        state.filterPeriod = "";
+        state.filterType = "";
+        state.filterMaterial = "";
+        state.sortBy = "";
+        refreshDisplayList();
+      };
+
+      const clearSearch = () => { state.smartSearchKeyword = ""; resetToFullList(); };
+
+      const openDetail = (item) => {
+        state.currentDetail = item;
+        state.showDetail = true;
+        let candidates = state.allData.filter(i => i.object_id !== item.object_id);
+        const scored = candidates.map(c => {
+          let score = 0;
+          if (c.type === item.type) score += 3;
+          if (c.period === item.period) score += 2;
+          if (c.museum === item.museum) score += 2;
+          return { ...c, score };
+        });
+        scored.sort((a,b)=> b.score - a.score);
+        state.recommendList = scored.slice(0, 5);
+      };
+      const goBack = () => { state.showDetail = false; state.currentDetail = null; refreshDisplayList(); };
+      const previewImage = () => { if (state.currentDetail) { state.previewUrl = getImageUrl(state.currentDetail); state.previewVisible = true; } };
+      const closePreview = () => { state.previewVisible = false; state.previewUrl = ""; };
+      
+      const truncateTitle = (title, len = 28) => title && title.length > len ? title.slice(0, len) + '...' : title || '无标题';
+      const truncateDesc = (desc, len = 80) => desc && desc.length > len ? desc.slice(0, len) + '...' : desc || '';
+
+      const loadData = async () => {
+        state.loading = true;
+        state.errorMsg = "";
+        try {
+          const token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0ODE3MTA3MC01NjM3LTQ5MDEtYmRlMS0xM2E1ZWU3MmI1OTEiLCJ1c2VyVHlwZSI6IkFETUlOIiwiaWF0IjoxNzgwMjIzMzY3LCJleHAiOjE3ODAyMzA1Njd9.hJvqiOr1N80pEUaRRzKBnuOXA2CFAQZtGmxEBrJjSFI";
+          
+          const response = await fetch('http://60.205.14.101:8080/api/v1/data/relics?page=1&size=100', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          const result = await response.json();
+          
+          if (result.code === 200) {
+            state.allData = (result.data.records || []).map(item => ({
+              object_id: item.objectId,
+              title: item.title,
+              period: item.period,
+              type: item.type,
+              material: item.material,
+              description: item.description,
+              dimensions: item.dimensions,
+              image_url: item.imageUrl,
+              museum: item.museumName || '未知博物馆',
+              location: '',
+              accession_number: item.accessionNumber,
+              credit_line: item.creditLine,
+              detail_url: item.detailUrl
+            }));
+          } else {
+            state.allData = [];
+            state.errorMsg = result.message;
+          }
+          
+          updateOptions();
+          refreshDisplayList();
+          console.log(`✅ 成功加载 ${state.allData.length} 条文物数据`);
+        } catch (error) {
+          state.errorMsg = error.message;
+          console.error("加载失败:", error);
+        } finally {
+          state.loading = false;
+        }
+      };
+
+      onMounted(() => { loadData(); });
+
+      return {
+        ...toRefs(state),
+        periodOptions,
+        typeOptions,
+        materialOptions,
+        museumCount,
+        getMuseumColor,
+        getMuseumShort,
+        getImageUrl,
+        handleImageError,
+        handleFilterChange,
+        handlePageChange,
+        performSmartSearch,
+        resetToFullList,
+        clearSearch,
+        openDetail,
+        goBack,
+        previewImage,
+        closePreview,
+        truncateTitle,
+        truncateDesc
+      };
+    }
+  });
+
+  for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+    app.component(key, component);
+  }
+  app.use(ElementPlus);
+  app.mount("#app");
+</script>
+</body>
+</html>
+EOF

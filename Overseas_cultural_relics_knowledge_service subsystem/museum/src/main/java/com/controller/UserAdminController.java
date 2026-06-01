@@ -1,5 +1,6 @@
 package com.controller;
 
+import com.entity.Collect;
 import com.entity.CollectView;
 import com.entity.CommentView;
 import com.entity.User;
@@ -86,9 +87,22 @@ public class UserAdminController {
         try{
             String relicid = (String) map.get("rid");
             String userid = (String) map.get("uid");
-            int relic_id = Integer.parseInt(relicid);
+            String objectId = map.get("objectId") == null ? null : String.valueOf(map.get("objectId")).trim();
             int user_id = Integer.parseInt(userid);
-            result.setData(collectService.removecollection(collectService.findByuidandrid(user_id,relic_id).getId()));
+            Collect found = null;
+            if (objectId != null && !objectId.isEmpty()) {
+                found = collectService.findByUidAndObjectId(user_id, objectId);
+                if (found == null) {
+                    found = collectService.findByuidandrid(user_id, com.util.RelicKeyUtil.toRelicKey(objectId));
+                }
+            } else {
+                int relic_id = Integer.parseInt(relicid);
+                found = collectService.findByuidandrid(user_id, relic_id);
+            }
+            if (found == null) {
+                throw new DeleteLoss("收藏文物未找到");
+            }
+            result.setData(collectService.removecollection(found.getId()));
             result.setState(200);
             result.setMessage("取消收藏成功");
         }catch(DeleteLoss e){

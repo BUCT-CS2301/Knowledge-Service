@@ -78,7 +78,6 @@
                 shape-rendering="geometricPrecision"
                 class="node-circle"
                 @mousedown.stop="handleNodeMouseDown($event, index)"
-                @click.stop="handleNodeClick(node)"
               />
               <text
                 x="0"
@@ -137,12 +136,20 @@
           <div class="detail-type">{{ selectedNode.type }}</div>
           <div class="detail-info">
             <p><strong>类型:</strong> {{ selectedNode.type }}</p>
+            <p v-if="selectedNode.description"><strong>简介:</strong> {{ selectedNode.description }}</p>
             <p><strong>关系:</strong></p>
             <ul>
               <li v-for="(rel, i) in getNodeRelations(selectedNode.id)" :key="i">
                 {{ rel }}
               </li>
             </ul>
+            <button
+              v-if="selectedNode.type === '文物' || selectedNode.type === '博物馆'"
+              class="detail-link-btn"
+              @click="navigateFromNode(selectedNode)"
+            >
+              查看详情 →
+            </button>
           </div>
         </div>
       </div>
@@ -154,6 +161,7 @@
 
 <script>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
 import { getApiRoot } from '@/config/api'
@@ -166,6 +174,7 @@ export default {
     MainFooter
   },
   setup() {
+    const router = useRouter()
     const nodes = ref([])
     const links = ref([])
     const loading = ref(true)
@@ -175,8 +184,10 @@ export default {
     const isDragging = ref(false)
     const dragStart = ref({ x: 0, y: 0 })
     const isNodeDragging = ref(false)
-    const nodeDragStart = ref({ x: 0, y: 0, nodeIndex: -1 })
+    const nodeDragStart = ref({ x: 0, y: 0, nodeIndex: -1, screenX: 0, screenY: 0 })
     const selectedNode = ref(null)
+    const nodeDragMoved = ref(false)
+    const DRAG_THRESHOLD = 12 // 屏幕像素，避免轻点时误判为拖拽
     const demoLimit = ref(25)
     const demoHint = ref('')
 
@@ -243,16 +254,22 @@ export default {
       if (isNodeDragging.value) {
         const svg = document.querySelector('.graph-svg')
         const svgRect = svg.getBoundingClientRect()
-        
-        // 鼠标在SVG坐标系中的位置
+
         const currentX = (e.clientX - svgRect.left) / scale.value - offsetX.value / scale.value
         const currentY = (e.clientY - svgRect.top) / scale.value - offsetY.value / scale.value
-        
+
+        const dx = currentX - nodeDragStart.value.mouseX
+        const dy = currentY - nodeDragStart.value.mouseY
+        const screenDx = e.clientX - nodeDragStart.value.screenX
+        const screenDy = e.clientY - nodeDragStart.value.screenY
+        if (Math.hypot(screenDx, screenDy) > DRAG_THRESHOLD) {
+          nodeDragMoved.value = true
+        }
+
         const index = nodeDragStart.value.nodeIndex
-        
-        // 节点位置 = 初始节点位置 + (当前鼠标 - 初始鼠标)
-        nodes.value[index].x = nodeDragStart.value.nodeX + (currentX - nodeDragStart.value.mouseX)
-        nodes.value[index].y = nodeDragStart.value.nodeY + (currentY - nodeDragStart.value.mouseY)
+
+        nodes.value[index].x = nodeDragStart.value.nodeX + dx
+        nodes.value[index].y = nodeDragStart.value.nodeY + dy
       } else if (isDragging.value) {
         offsetX.value = e.clientX - dragStart.value.x
         offsetY.value = e.clientY - dragStart.value.y
@@ -260,13 +277,64 @@ export default {
     }
 
     const handleMouseUp = () => {
+      if (isNodeDragging.value && nodeDragStart.value.nodeIndex >= 0) {
+        const node = nodes.value[nodeDragStart.value.nodeIndex]
+        if (node && !nodeDragMoved.value) {
+          if (node.type === '文物' || node.type === '博物馆') {
+            navigateFromNode(node)
+          } else {
+            selectedNode.value = selectedNode.value && selectedNode.value.id === node.id ? null : node
+          }
+        } else if (node && nodeDragMoved.value) {
+          selectedNode.value = node
+        }
+      }
       isDragging.value = false
       isNodeDragging.value = false
       nodeDragStart.value.nodeIndex = -1
+      nodeDragMoved.value = false
+    }
+
+    const getRelatedLabel = (nodeId, relationType, targetType) => {
+      for (const link of links.value) {
+        if (link.source !== nodeId || link.relationType !== relationType) continue
+        const target = nodes.value.find(n => n.id === link.target && n.type === targetType)
+        if (target) return target.label
+      }
+      return ''
+    }
+
+    const saveGraphRelicSnapshot = (node) => {
+      sessionStorage.setItem('graphRelicDetail', JSON.stringify({
+        id: 'kg',
+        objectId: node.objectId || '',
+        name: node.label,
+        museum: getRelatedLabel(node.id, '收藏于', '博物馆') || '未知博物馆',
+        period: getRelatedLabel(node.id, '属于', '朝代') || '未知年代',
+        image: node.imageUrl || '/timg.jpeg',
+        description: node.description || '暂无详细描述'
+      }))
+    }
+
+    const navigateFromNode = (node) => {
+      if (!node) return
+      if (node.type === '文物') {
+        if (node.objectId) {
+          router.push({ path: '/antiqueDetail', query: { objectId: node.objectId } })
+          return
+        }
+        saveGraphRelicSnapshot(node)
+        router.push({ path: '/relicDetail', query: { from: 'kg', name: node.label } })
+        return
+      }
+      if (node.type === '博物馆') {
+        router.push({ path: '/museumDetail', query: { id: node.id, name: node.label } })
+      }
     }
 
     const handleNodeMouseDown = (e, index) => {
       e.stopPropagation()
+      nodeDragMoved.value = false
       isNodeDragging.value = true
       
       const svg = document.querySelector('.graph-svg')
@@ -279,14 +347,12 @@ export default {
       nodeDragStart.value = {
         mouseX: mouseX,
         mouseY: mouseY,
+        screenX: e.clientX,
+        screenY: e.clientY,
         nodeX: nodes.value[index].x,
         nodeY: nodes.value[index].y,
         nodeIndex: index
       }
-    }
-
-    const handleNodeClick = (node) => {
-      selectedNode.value = selectedNode.value && selectedNode.value.id === node.id ? null : node
     }
 
     const handleWheel = (e) => {
@@ -365,7 +431,10 @@ export default {
           const apiNodes = result.data.nodes.map(node => ({
             id: node.id,
             type: node.type,
-            label: node.label
+            label: node.label,
+            description: node.description || '',
+            imageUrl: node.imageUrl || '',
+            objectId: node.objectId || ''
           }))
           const apiLinks = result.data.links.map(link => ({
             source: link.source,
@@ -396,7 +465,14 @@ export default {
         links.value = apiData.links
       } else {
         console.log('使用本地Mock数据')
-        const localNodes = (kgData.nodes || []).slice(0, 40)
+        const localNodes = (kgData.nodes || []).slice(0, 40).map(node => ({
+          id: node.id,
+          type: node.type,
+          label: node.label,
+          description: node.description || '',
+          imageUrl: node.imageUrl || '',
+          objectId: node.objectId || ''
+        }))
         const localLinks = (kgData.edges || []).filter(
           l => localNodes.some(n => n.id === l.source) && localNodes.some(n => n.id === l.target)
         )
@@ -437,7 +513,7 @@ export default {
       handleMouseMove,
       handleMouseUp,
       handleNodeMouseDown,
-      handleNodeClick,
+      navigateFromNode,
       handleWheel,
       zoomIn,
       zoomOut,
@@ -694,6 +770,23 @@ export default {
   color: rgba(255, 255, 255, 0.6);
   font-size: 12px;
   line-height: 1.4;
+}
+
+.detail-link-btn {
+  margin-top: 14px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid rgba(232, 213, 183, 0.45);
+  border-radius: 8px;
+  background: rgba(232, 213, 183, 0.12);
+  color: #e8d5b7;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.detail-link-btn:hover {
+  background: rgba(232, 213, 183, 0.22);
 }
 
 .close-btn {
