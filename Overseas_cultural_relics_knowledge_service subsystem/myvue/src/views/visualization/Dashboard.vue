@@ -8,17 +8,6 @@
         <p>文物数据统计与可视化分析</p>
       </div>
 
-      <div class="dashboard-controls">
-        <el-date-picker v-model="dateRange" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期"></el-date-picker>
-        <el-select v-model="selectedMuseum" placeholder="选择博物馆">
-          <el-option label="全部博物馆" value="all"></el-option>
-          <el-option label="大英博物馆" value="british"></el-option>
-          <el-option label="大都会博物馆" value="met"></el-option>
-          <el-option label="卢浮宫" value="louvre"></el-option>
-        </el-select>
-        <el-button type="primary" @click="refreshData" :loading="isLoading">刷新数据</el-button>
-      </div>
-
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-info">
@@ -157,10 +146,6 @@ export default {
     MainFooter
   },
   setup() {
-    const dateRange = ref([])
-    const selectedMuseum = ref('all')
-    const isLoading = ref(false)
-
     const mockStats = {
       totalRelics: 128650,
       museumCount: 156,
@@ -222,7 +207,6 @@ export default {
     }
 
     const fetchDashboardData = async () => {
-      isLoading.value = true
       try {
         const response = await axios.get(`${getApiRoot()}/api/v1/data/dashboard`)
         if (response.data && response.data.data) {
@@ -241,11 +225,6 @@ export default {
         console.error('Failed to fetch dashboard data:', error)
         loadMockData()
       }
-      isLoading.value = false
-    }
-
-    const refreshData = () => {
-      fetchDashboardData()
     }
 
     onMounted(() => {
@@ -294,9 +273,6 @@ export default {
     }
 
     return {
-      dateRange,
-      selectedMuseum,
-      isLoading,
       stats,
       typeDistribution,
       dynastyDistribution,
@@ -308,8 +284,7 @@ export default {
       maxMuseumCount,
       trendPoints,
       linePath,
-      selectType,
-      refreshData
+      selectType
     }
   }
 }
@@ -338,31 +313,6 @@ export default {
   p {
     font-size: 14px;
     color: #666;
-  }
-}
-
-.dashboard-controls {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 25px;
-  align-items: center;
-
-  :deep(.el-date-picker) {
-    width: 280px;
-  }
-
-  :deep(.el-select) {
-    width: 180px;
-  }
-
-  :deep(.el-button--primary) {
-    background-color: #8B4513 !important;
-    border-color: #8B4513 !important;
-
-    &:hover {
-      background-color: #6B3510 !important;
-      border-color: #6B3510 !important;
-    }
   }
 }
 

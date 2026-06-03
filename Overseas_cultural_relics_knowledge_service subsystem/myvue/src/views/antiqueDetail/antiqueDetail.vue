@@ -170,7 +170,7 @@ import MainHeader from '../../components/MainHeader/MainHeader'
 import MainFooter from '../../components/MainFooter/MainFooter'
 import request from '@/api/request'
 import { getApiRoot } from '@/config/api'
-import { normalizeExternalImageUrl } from '@/utils/artifactPlaceholder'
+import { getArtifactImageUrl, handleArtifactImageError } from '@/utils/artifactPlaceholder'
 import { collectRelic, uncollectRelic, getRelicComments } from '@/api/relic'
 import { relicKeyFromObjectId } from '@/utils/relicKey'
 
@@ -246,25 +246,12 @@ export default {
       return window.matchMedia('(max-width: 768px)').matches
     },
     imageUrl () {
-      const url = this.form1.img_url || this.form1.pic || ''
-
-      if (!url || url === 'null' || url === 'undefined') {
-        return '/timg.jpeg'
-      }
-
-      if (url.startsWith('http')) {
-        return normalizeExternalImageUrl(url)
-      }
-
-      if (url.startsWith('/')) {
-        return this.baseUrl + url
-      }
-
-      if (url.includes('assets/') || url.includes('src/')) {
-        return '/timg.jpeg'
-      }
-
-      return '/timg.jpeg'
+      return getArtifactImageUrl({
+        img_url: this.form1.img_url || this.form1.pic || '',
+        accession_number: this.form1.accession_number,
+        museum: this.form1.museum || this.form1.makers_name,
+        object_name: this.form1.object_name
+      })
     }
   },
   created () {
@@ -292,21 +279,12 @@ export default {
       })
     },
     onImageError (e) {
-      const raw = (this.form1.img_url || '').trim()
-      if (raw && /^https?:\/\//i.test(raw)) {
-        if (this.imgErrorCount === 0) {
-          this.imgErrorCount = 1
-          e.target.src = normalizeExternalImageUrl(raw)
-          return
-        }
-        if (this.imgErrorCount === 1) {
-          this.imgErrorCount = 2
-          e.target.src = raw
-          return
-        }
-      }
-      e.target.onerror = null
-      e.target.src = '/timg.jpeg'
+      handleArtifactImageError(e, {
+        img_url: this.form1.img_url,
+        accession_number: this.form1.accession_number,
+        museum: this.form1.museum || this.form1.makers_name,
+        object_name: this.form1.object_name
+      })
     },
     pageInit () {
       const objectId = this.$route.query.objectId

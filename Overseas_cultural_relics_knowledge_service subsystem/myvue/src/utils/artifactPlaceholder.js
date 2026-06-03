@@ -9,6 +9,8 @@ const PALETTES = {
   default: { bg: '#4a3728', fg: '#d4b896', label: '文物' }
 }
 
+const PROXY_HOSTS = ['art.nelson-atkins.org', 'penn.museum', 'clevelandart.org']
+
 function pickPalette (item) {
   const text = [
     item?.cat1,
@@ -36,16 +38,33 @@ function svgDataUri (palette, title) {
   return `data:image/svg+xml,${encodeURIComponent(svg)}`
 }
 
-/** 列表项展示用：优先真实 URL，否则类型占位图 */
-export function getArtifactImageUrl (item) {
-  const url = item?.img_url
-  if (url && String(url).trim() && !String(url).includes('picsum.photos')) {
-    return normalizeExternalImageUrl(String(url).trim())
-  }
-  return svgDataUri(pickPalette(item), item?.object_name)
+function museumLabel (item) {
+  return [item?.makers_name, item?.museum, item?.museumName, item?.museum_name_cn].filter(Boolean).join(' ')
 }
 
-const PROXY_HOSTS = ['art.nelson-atkins.org', 'penn.museum']
+function isClevelandMuseum (museum) {
+  return /Cleveland|克利夫兰/i.test(museum || '')
+}
+
+function looksLikeClevelandAccession (accession) {
+  return /^\d{4}\..+/.test(accession) || /^\d{4}-.+/.test(accession)
+}
+
+/** 根据馆藏编号推断克利夫兰博物馆 CDN 地址 */
+export function buildCdnUrlFromAccession (accession, museum) {
+  const acc = (accession || '').trim()
+  if (!acc) return ''
+  const muse = museum || ''
+  if (isClevelandMuseum(muse) || (!muse && looksLikeClevelandAccession(acc))) {
+    return `https://openaccess-cdn.clevelandart.org/${acc}/${acc}_web.jpg`
+  }
+  return ''
+}
+
+export function buildCdnUrlFromItem (item) {
+  const acc = (item?.accessionNumber || item?.accession_number || '').trim()
+  return buildCdnUrlFromAccession(acc, museumLabel(item))
+}
 
 function needsProxy (url) {
   try {
@@ -56,7 +75,7 @@ function needsProxy (url) {
   }
 }
 
-function toProxyUrl (url) {
+export function toProxyUrl (url) {
   const stripped = url.replace(/^https?:\/\//i, '')
   return `https://images.weserv.nl/?url=${encodeURIComponent(stripped)}&output=jpg`
 }
@@ -65,4 +84,49 @@ function toProxyUrl (url) {
 export function normalizeExternalImageUrl (url) {
   if (!url || !/^https?:\/\//i.test(url)) return url
   return needsProxy(url) ? toProxyUrl(url) : url
+}
+
+/** 列表项展示用：真实 URL → CDN 推断 → 占位图 */
+export function getArtifactImageUrl (item) {
+  const url = item?.img_url
+  if (url && String(url).trim() && !String(url).includes('picsum.photos')) {
+    return normalizeExternalImageUrl(String(url).trim())
+  }
+  const cdn = buildCdnUrlFromItem(item)
+  if (cdn) {
+    return normalizeExternalImageUrl(cdn)
+  }
+  return svgDataUri(pickPalette(item), item?.object_name)
+}
+
+/** 占位图（仅在所有真实图源均失败时使用） */
+export function getArtifactPlaceholderUrl (item) {
+  return svgDataUri(pickPalette(item), item?.object_name)
+}
+
+/**
+ * 图片加载失败时的多级重试：代理 → 原链 → CDN 推断 → 占位图
+ */
+export function handleArtifactImageError (e, item) {
+  const raw = (item?.img_url || '').trim()
+  if (raw && /^https?:\/\//i.test(raw)) {
+    if (!e.target.dataset.triedProxy) {
+      e.target.dataset.triedProxy = '1'
+      e.target.src = toProxyUrl(raw)
+      return
+    }
+    if (!e.target.dataset.triedDirect) {
+      e.target.dataset.triedDirect = '1'
+      e.target.src = raw
+      return
+    }
+  }
+  const cdn = buildCdnUrlFromItem(item)
+  if (cdn && !e.target.dataset.triedCdn) {
+    e.target.dataset.triedCdn = '1'
+    e.target.src = normalizeExternalImageUrl(cdn)
+    return
+  }
+  e.target.onerror = null
+  e.target.src = getArtifactPlaceholderUrl(item)
 }

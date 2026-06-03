@@ -58,7 +58,7 @@ def fetch_rows():
             cursor.execute(
                 """
                 SELECT a.object_id, a.title, a.period, a.type, a.material, a.description,
-                       a.image_url, a.detail_url, a.museum_id,
+                       a.image_url, a.detail_url, a.museum_id, a.accession_number,
                        m.name AS museum_name, m.name_cn AS museum_name_cn, m.location AS museum_location
                 FROM artifact a
                 LEFT JOIN museum m ON a.museum_id = m.object_id
@@ -107,6 +107,10 @@ def sync_graph(relics, museums, *, dry_run: bool = False) -> None:
                     MERGE (a:Artifact {object_id: row.object_id})
                     SET a.title = row.title,
                         a.description = coalesce(row.description, a.description),
+                        a.accession_number = CASE
+                            WHEN row.accession_number IS NULL OR trim(row.accession_number) = '' THEN a.accession_number
+                            ELSE row.accession_number
+                        END,
                         a.imageUrl = CASE
                             WHEN row.image_url IS NULL OR trim(row.image_url) = '' THEN a.imageUrl
                             ELSE row.image_url
@@ -161,8 +165,42 @@ def sync_graph(relics, museums, *, dry_run: bool = False) -> None:
                 ids=[r["object_id"] for r in relics],
             ).single()["c"]
             print(f"Neo4j 同步完成: 匹配 Artifact={synced}, 含展示图片={with_img}")
+            backfilled = backfill_images_by_accession(session, relics)
+            print(f"按 accession_number 补全中文节点图片: {backfilled}")
     finally:
         driver.close()
+
+
+def backfill_images_by_accession(session, relics: list) -> int:
+    """中文图谱节点与 MySQL 英文节点 object_id 不同，用 accession_number 补 imageUrl。"""
+    acc_map: dict[str, str] = {}
+    for row in relics:
+        acc = (row.get("accession_number") or "").strip()
+        url = (row.get("image_url") or "").strip()
+        if acc and url and acc not in acc_map:
+            acc_map[acc] = url
+    if not acc_map:
+        return 0
+    updated = 0
+    items = list(acc_map.items())
+    for i in range(0, len(items), 500):
+        batch = [{"acc": k, "url": v} for k, v in items[i : i + 500]]
+        count = session.run(
+            """
+            UNWIND $rows AS row
+            MATCH (a:Artifact)
+            WHERE a.accession_number = row.acc
+              AND (a.imageUrl IS NULL OR trim(a.imageUrl) = '')
+            SET a.imageUrl = row.url
+            WITH a, row
+            MERGE (img:Image {url: row.url})
+            MERGE (a)-[:展示图片]->(img)
+            RETURN count(a) AS c
+            """,
+            rows=batch,
+        ).single()["c"]
+        updated += count
+    return updated
 
 
 def main() -> None:

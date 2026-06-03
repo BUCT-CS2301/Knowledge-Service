@@ -12,3 +12,5 @@ out/
 **/.venv-sync/
 nohup.out
 **/nohup.out
+deploy/logs/
+vite.config.js.timestamp-*.mjs

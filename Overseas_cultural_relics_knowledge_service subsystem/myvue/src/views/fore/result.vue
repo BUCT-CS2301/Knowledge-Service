@@ -117,7 +117,7 @@ import {
 } from '@/api/search'
 import { exportToCsv, exportToJson } from '@/utils/export'
 import { MOCK_ARTIFACTS } from '@/utils/mockArtifacts'
-import { getArtifactImageUrl, normalizeExternalImageUrl } from '@/utils/artifactPlaceholder'
+import { getArtifactImageUrl, handleArtifactImageError } from '@/utils/artifactPlaceholder'
 import { ElMessage } from 'element-plus'
 
 export default {
@@ -264,21 +264,7 @@ export default {
       return getArtifactImageUrl(item)
     },
     onImgError (e, item) {
-      const raw = (item?.img_url || '').trim()
-      if (raw && /^https?:\/\//i.test(raw)) {
-        if (!e.target.dataset.triedProxy) {
-          e.target.dataset.triedProxy = '1'
-          e.target.src = normalizeExternalImageUrl(raw)
-          return
-        }
-        if (!e.target.dataset.triedDirect) {
-          e.target.dataset.triedDirect = '1'
-          e.target.src = raw
-          return
-        }
-      }
-      e.target.onerror = null
-      e.target.src = getArtifactImageUrl({ ...item, img_url: '' })
+      handleArtifactImageError(e, item)
     }
   }
 }

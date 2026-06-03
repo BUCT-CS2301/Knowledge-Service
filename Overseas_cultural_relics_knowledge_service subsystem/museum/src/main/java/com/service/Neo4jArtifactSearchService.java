@@ -81,6 +81,7 @@ public class Neo4jArtifactSearchService {
                    coalesce(period, '') AS period,
                    coalesce(artifactType, '') AS type,
                    coalesce(museum, '') AS museum,
+                   coalesce(a.accession_number, '') AS accessionNumber,
                    coalesce(
                      imageFromRel,
                      a.imageUrl,
@@ -280,6 +281,7 @@ public class Neo4jArtifactSearchService {
         cart.setCat2(stringVal(row.get("period")));
         cart.setCat3(stringVal(row.get("type")));
         cart.setMakers_name(stringVal(row.get("museum")));
+        cart.setAccessionNumber(stringVal(row.get("accessionNumber")));
         cart.setImg_url(stringVal(row.get("imageUrl")));
         return cart;
     }

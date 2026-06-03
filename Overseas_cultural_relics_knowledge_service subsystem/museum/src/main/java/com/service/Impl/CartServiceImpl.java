@@ -4,6 +4,7 @@ import com.entity.Cart;
 import com.mapper.CartMapper;
 import com.mapper.FindImageMapper;
 import com.mapper.ProductMapper;
+import com.service.ArtifactImageFallbackService;
 import com.service.ICartService;
 import com.service.Neo4jArtifactSearchService;
 import com.service.exception.ProductNotFoundException;
@@ -24,6 +25,8 @@ public class CartServiceImpl implements ICartService {
     private FindImageMapper findImageMapper;
     @Autowired
     private Neo4jArtifactSearchService neo4jArtifactSearchService;
+    @Autowired
+    private ArtifactImageFallbackService artifactImageFallbackService;
 
     @Override
     public List<Cart> SearchProductByClass(String x, String y) {
@@ -155,6 +158,7 @@ public class CartServiceImpl implements ICartService {
     }
 
     private List<Cart> postProcessImages(List<Cart> result) {
+        artifactImageFallbackService.fillMissingImages(result);
         for (int i = 0; i < result.size(); i++) {
             result.set(i, resolveImage(result.get(i)));
         }

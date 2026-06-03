@@ -1,6 +1,7 @@
 package com.controller;
 
 import com.entity.*;
+import com.service.ArtifactImageFallbackService;
 import com.service.CollectService;
 import com.service.ICartService;
 import com.service.ICommentService;
@@ -35,6 +36,8 @@ public class ProductController extends BaseController{
     private CollectService collectService;
     @Autowired
     private com.service.Neo4jArtifactSearchService neo4jArtifactSearchService;
+    @Autowired
+    private ArtifactImageFallbackService artifactImageFallbackService;
 
     @RequestMapping("/detailByObjectId")//Neo4j 文物详情（按 objectId）
     public JsonResult<Map<String, Object>> findByObjectId(@RequestBody Map map){
@@ -47,6 +50,7 @@ public class ProductController extends BaseController{
             result.setMessage("抱歉，您查询的文物不存在！");
             return result;
         }
+        artifactImageFallbackService.fillMissingImage(detail);
         Object uidObj = map.get("uid");
         String oidStr = String.valueOf(detail.get("objectId"));
         int relicKey = RelicKeyUtil.toRelicKey(oidStr);

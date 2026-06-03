@@ -1,0 +1,62 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mapper.ArtifactImageMapper">
+
+    <sql id="validImageWhere">
+        is_deleted = 0
+        AND image_url IS NOT NULL
+        AND TRIM(image_url) &lt;&gt; ''
+    </sql>
+
+    <select id="findImageUrlByObjectId" resultType="String">
+        SELECT image_url
+        FROM artifact
+        WHERE <include refid="validImageWhere"/>
+          AND object_id = #{objectId}
+        LIMIT 1
+    </select>
+
+    <select id="findImageUrlByAccessionNumber" resultType="String">
+        SELECT image_url
+        FROM artifact
+        WHERE <include refid="validImageWhere"/>
+          AND accession_number = #{accessionNumber}
+        LIMIT 1
+    </select>
+
+    <select id="findImageRowsByObjectIds" resultType="map">
+        SELECT object_id AS objectId, image_url AS imageUrl
+        FROM artifact
+        WHERE <include refid="validImageWhere"/>
+          AND object_id IN
+        <foreach collection="objectIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="findImageRowsByAccessionNumbers" resultType="map">
+        SELECT accession_number AS accessionNumber, image_url AS imageUrl
+        FROM artifact
+        WHERE <include refid="validImageWhere"/>
+          AND accession_number IN
+        <foreach collection="accessionNumbers" item="acc" open="(" separator="," close=")">
+            #{acc}
+        </foreach>
+    </select>
+
+    <select id="findMetaRowsByObjectIds" resultType="map">
+        SELECT a.object_id AS objectId,
+               COALESCE(a.image_url, '') AS imageUrl,
+               COALESCE(a.accession_number, '') AS accessionNumber,
+               COALESCE(m.name, '') AS museumName,
+               COALESCE(m.name_cn, '') AS museumNameCn
+        FROM artifact a
+        LEFT JOIN museum m ON a.museum_id = m.object_id
+        WHERE a.is_deleted = 0
+          AND a.object_id IN
+        <foreach collection="objectIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+</mapper>
